@@ -1,21 +1,51 @@
-# Welcome to Jekyll!
-#
-# This config file is meant for settings that affect your whole blog, values
-# which you are expected to set up once and rarely need to edit after that.
-# For technical reasons, this file is *NOT* reloaded automatically when you use
-# 'jekyll serve'. If you change this file, please restart the server process.
+title: Stack Problems
+description: My Personal Stack Problems
+author: Long Hoang
+github: https://github.com/tobilova
+about: I am ruby developer. Currently doing more in backend, actually in Nodejs and Python and Security
+disqus_shortname: stackproblems
+google_analytics: UA-XXXXXXXX-Y
 
-# Site settings
-title: Tobi's blog
-email: hoangphuocvanlong@gmail.com
-description: > # this means to ignore newlines until "baseurl:"
-  Write an awesome description for your new site here. You can edit this
-  line in _config.yml. It will appear in your document head meta (for
-  Google search results) and in your feed.xml site description.
-baseurl: "" # the subpath of your site, e.g. /blog
-url: "http://yourdomain.com" # the base hostname & protocol for your site
-twitter_username: tobilova
-github_username:  tobilova
+enableTags: true
+tagarray: []
 
-# Build settings
+collections:
+  project:
+    output: true
+    permalink: /project/:path/
+
+social:
+    - icon: fa-facebook
+      link: https://fb.com/anbilova.Manochenko
+    - icon: fa-skype
+      link: "#"
+    - icon: fa-twitter
+      link: "#"
+    - icon: fa-linkedin
+      link: "#"
+    - icon: fa-stack-exchange
+      link: "#"
+
+share:
+  twitter_username: ""
+  fb_appid: 1749788565247320
+
+urls:
+    - text: About Me
+      url: /about/
+    - text: Projects
+      url: /projects/
+    - text: Github
+      url: https://github.com/tobilova
+    - text: XML Feed
+      url: /feed.xml
+
+url: "https://tobilova.github.io"
+baseurl: ""
+paginate: 15
+per_page: 15
+paginate_path: "/page:num/"
 markdown: kramdown
+gems:
+  - jekyll-paginate
+  - jekyll-gist
