@@ -4,7 +4,7 @@ author: Long Hoang
 github: https://github.com/tobilova
 about: I am Ruby developer. Currently doing more in backend, actually in Java and Python and Security
 disqus_shortname: stackproblems
-google_analytics: UA-XXXXXXXX-Y
+google_analytics: UA-38123532-2
 
 enableTags: true
 tagarray: []
@@ -33,8 +33,6 @@ share:
 urls:
     - text: About Me
       url: /about/
-    - text: Projects
-      url: /projects/
     - text: Github
       url: https://github.com/tobilova
     - text: XML Feed
