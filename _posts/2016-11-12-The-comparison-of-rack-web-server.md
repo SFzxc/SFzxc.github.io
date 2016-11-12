@@ -1,3 +1,10 @@
+---
+layout: post
+title:  "The comparison of rack web server for Ruby application"
+date:   2016-11-12 21:30:22 +0700
+categories: [others]
+---
+
 ### [Rack](https://github.com/rack/rack)
   Rack là một module web server interface. hay nói cách khác là một [middleware](https://vi.wikipedia.org/wiki/Middleware). Cho phép webserver và web app giao tiếp với nhau. Nó chia nhỏ những request HTTP được gửi đến rồi đưa nó vào những đường ống khá nhau và xử lý chúng thành từng mảnh cho đến khi nó gửi lại phản hồi từ web app (controller).
 Nó gồm 2 compoments Handler và Adapter. được sử dụng để giao tiếp với web server và application(framwork).
