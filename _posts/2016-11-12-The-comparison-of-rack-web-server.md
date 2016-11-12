@@ -1,9 +1,9 @@
 ### [Rack](https://github.com/rack/rack)
-  Rack là một module web server interface. hay nói cách khác là một [middleware](https://vi.wikipedia.org/wiki/Middleware). Cho phép webserver và web app giao tiếp với nhau.Nó chia nhỏ những request HTTP được gửi đến rồi đưa nó vào những đường ống khá nhau và xử lý chúng thành từng mảnh cho đến khi nó gửi lại phản hồi từ web app (controller).
+  Rack là một module web server interface. hay nói cách khác là một [middleware](https://vi.wikipedia.org/wiki/Middleware). Cho phép webserver và web app giao tiếp với nhau. Nó chia nhỏ những request HTTP được gửi đến rồi đưa nó vào những đường ống khá nhau và xử lý chúng thành từng mảnh cho đến khi nó gửi lại phản hồi từ web app (controller).
 Nó gồm 2 compoments Handler và Adapter. được sử dụng để giao tiếp với web server và application(framwork).
 
 ### Sự so sánh
-Trong bài này. chúng ta sẽ nói về những web app server thông dụng. Đi sâu từng cái đề thấy được sự khác nhau và có thể là một số đối lập của chúng. Mục đích là để bạn có cách hiểu tốt hơn trong việc lựa chọn web server phù hợp trong từng trường hợp nhất định.
+  Trong bài này. chúng ta sẽ nói về những web app server thông dụng. Đi sâu từng cái đề thấy được sự khác nhau và có thể là một số đối lập của chúng. Mục đích là để bạn có cách hiểu tốt hơn trong việc lựa chọn web server phù hợp trong từng trường hợp nhất định.
 
 ### [Passenger](https://github.com/phusion/passenger) 
   Passenger là một server được khuyến khích sử dụng cho rails app.
