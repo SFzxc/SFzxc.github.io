@@ -28,9 +28,9 @@ Là một app server dựa trên Event/Machine. Thin có khả năng xử lý y�
   Là một app server khá nghiêm chỉnh. Nó cũng có thể được sử dụng tốt cho Python. Khá đầy đủ tính năng. Tuy nhiên nó không được thiết kế để cố gắng làm được tất cả mọi thứ. Unicorn chỉ làm những gì cần phải thực hiện(việc của một web app server) và ủy thác những việc còn lại cho thứ có thể làm tốt hơn.
 Giống như NGINX, Unicorn có thể thực thi và deploy ứng dụng mà ko cần kết nối với client.
 
-*Một số tính năng nâng cao:
--Tất cả worker chạy trong một không gian riêng biêt, lưu trữ một request mỗi lần.
--Sẵn sàng lắng nghe nhiều interface
+* Một số tính năng nâng cao:
+- Tất cả worker chạy trong một không gian riêng biêt, lưu trữ một request mỗi lần.
+- Sẵn sàng lắng nghe nhiều interface
 
 
  
