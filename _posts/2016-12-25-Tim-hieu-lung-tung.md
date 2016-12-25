@@ -2,7 +2,7 @@
 layout: post
 title:  Boostcamp ngày chủ nhật
 date:   2016-06-11 03:43:45 +0700
-categories: [ruby, codefights]
+categories: [ruby, bitcoin]
 ---
 
 **Bitcoin JSON RPC**
@@ -10,7 +10,9 @@ categories: [ruby, codefights]
 Setup một bitcoin server local để viêt exchange bitcoin web app.
 ```
 sudo add-apt-repository ppa:bitcoin/bitcoin
+
 sudo apt-get update
+
 sudo apt-get install bitcoind -y
 ```
 
@@ -21,17 +23,25 @@ cd ~/.bitcoin
 Tạo một file config có tên sau : bincoin.conf
 ```
 prune=600
+
 maxconnections=12
+
 maxuploadtarget=20
+
 rpcuser=btnuser
+
 rpcpassword=btnpassword
+
 daemon=1
+
 keypool=10000
+
 rpcport=8392
 
 ````
 ```
 reboot
+
 bitcoind
 ```
 
