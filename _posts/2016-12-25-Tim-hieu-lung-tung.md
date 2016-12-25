@@ -10,10 +10,13 @@ Setup một bitcoin server local để viêt exchange bitcoin web app.
 ```
 sudo add-apt-repository ppa:bitcoin/bitcoin
 sudo apt-get update
-sudo apt-get install bitcoind -y```
+sudo apt-get install bitcoind -y
+```
 
 
-```cd ~/.bitcoin```
+```
+cd ~/.bitcoin
+```
 Tạo một file config có tên sau : bincoin.conf
 ```
 prune=600
