@@ -6,6 +6,7 @@ categories: [ruby, codefights]
 ---
 
 **Bitcoin JSON RPC**
+
 Setup một bitcoin server local để viêt exchange bitcoin web app.
 ```
 sudo add-apt-repository ppa:bitcoin/bitcoin
