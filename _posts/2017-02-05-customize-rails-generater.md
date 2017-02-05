@@ -15,6 +15,7 @@ rails new new_app
 cd new_app 
 ```
 Ta chạy lệnh `rails g generator rails/my_customize`
+
 ```
 Running via Spring preloader in process 13177
 Expected string default value for '--jbuilder'; got true (boolean)
@@ -24,11 +25,11 @@ Expected string default value for '--jbuilder'; got true (boolean)
       create  lib/generators/rails/my_customize/templates
       invoke  test_unit
       create    test/lib/generators/rails/my_customize_generator_test.rb
-
 ```
+
 Trong file `lib/generators/rails/my_customize/my_service_generator.rb`
 
-```
+```ruby
 class Rails::MyCustomizeGenerator < Rails::Generators::NamedBase
   def create_service_file
     create_file "app/services/#{name}_service.rb", <<-FILE
@@ -39,24 +40,27 @@ end
     FILE
   end
 end
-
 ```
+
 Ở đây ta muốn với mỗi lần generate nó sẽ tạo thêm một file trong thư mục `services`
 và có nội dung là 
-```
+
+```ruby
 class #{class_name}Service
   def initialize(current_user, params)
   end
 end
 ```
+
 Sau đó, trong file `config/application.rb`
 Ta thêm vào:
 
-```
+```ruby
     config.generators do |g|
       g.helper :my_customize
     end
 ```
+
 Có rất nhiều tùy chọn config khác, ta có thêm tham khảo thêm ở 
 [http://guides.rubyonrails.org/generators.html]
 
