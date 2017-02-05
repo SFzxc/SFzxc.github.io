@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "Customize rails generate"
-date:   2016-06-11 03:43:45 +0700
+date:   2017-02-05 03:43:45 +0700
 categories: [ruby, rails]
 ---
 Với dự án lớn, việc phân chia cấu trúc thư mục rõ ràng thì sẽ dễ dàng cho việc maintain sau này. Ngoài các thư mục `MVC` còn phát sinh
