@@ -82,7 +82,7 @@ rails g controller user/information index
       invoke  test_unit
       create    test/controllers/user/information_controller_test.rb
       invoke  my_service
-      `create    app/services/user/information_service.rb`
+      create    app/services/user/information_service.rb
       invoke  assets
       invoke    coffee
       invoke    scss
