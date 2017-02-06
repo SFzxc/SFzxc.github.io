@@ -2,7 +2,7 @@
 layout: post
 title:  "Rails postgres array type"
 date:   2017-02-06 03:43:45 +0700
-categories: [rails]
+categories: [rails, postgres]
 ---
 
 Rails hỗ trợ rất tốt kiểu type array của Postgres. Đây kiểu dữ liệu rất ích với những vấn đề liên quan đến tags,..
