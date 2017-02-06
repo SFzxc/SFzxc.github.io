@@ -49,4 +49,4 @@ Nếu muốn search ilike với tag bất kì,ta có thể sử dụng `array_to
 Article.where("array_to_string(tags, '||') ILIKE :name", name: "%string%")
 ```
 
-Tuy nhiên cách này chỉ thích hợp nếu số lượng record vài trăm trở lại.
+Tuy nhiên cách này chỉ thích hợp nếu số lượng record không quá lớn, khoảng vài trăm trở lại.
