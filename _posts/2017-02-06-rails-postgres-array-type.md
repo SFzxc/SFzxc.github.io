@@ -41,9 +41,9 @@ Article.where(":name = ANY(tags)", name: "news")
 ```
 
 
-`ANY` không thể search với `like`
+`ANY` không thể search với `ilike`
 
-Nếu muốn search like với tag bất kì,ta có thể sử dụng `array_to_string`:
+Nếu muốn search ilike với tag bất kì,ta có thể sử dụng `array_to_string`:
 
 ```ruby
 Article.where("array_to_string(tags, '||') ILIKE :name", name: "%string%")
