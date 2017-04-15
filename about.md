@@ -14,6 +14,12 @@ Coding, Drawing, Eating, no sleep!
 Da Nang University of Technology (2011 - 2016)
 Information Technology
 
+**Language**
+
+Can basically communicate (writing, speaking) in English
+
+Can read a litle bit in Japanese, francais, Chinese :D
+
 **Work history**
 
 *Trainee Web Developer - FPT Software (May 2015 - August 2015)*
@@ -43,9 +49,9 @@ Information Technology
 
   - *Minagine* ( March 2016 - present )
 
-    This project builds a tool for human resource management. It really big project.
+    This project builds a web app for human resource management. It really big project.
     So many famous company was using it and they have each their own DB.
-    This project use exist DB. i suprired how they can design that in short time before.
+    This project use a exist DB. i suprired how they can design that in short time before.
     This project bussiness logic and UI really complex and i think only japanese people would like to use it lulz
     It was operating by Agile model. Each spring is 2 weeks
 
@@ -73,6 +79,6 @@ Information Technology
 I am interesting in `Database Performance Tunning`. My team got 3rd place in ISUCON contest(DPT Contest) which was held by Monstar Lab Company
 And also `Security`, `AI`, `Bitcoin, Devops`. I often play Dota 2 with my friend at weekend, read some none-tech books.
 
-The strongest advantage I have is passion, enthusiasm and fearlessness, ready to learn new technology because IM YOUNG
+The strongest advantage I have is problem solving, passion, enthusiasm and fearlessness, ready to learn new technology because IM YOUNG
 
 email: hoangphuocvanlong[at]gmail.com
