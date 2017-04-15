@@ -47,15 +47,16 @@ Information Technology
     So many famous company was using it and they have each their own DB.
     This project use exist DB. i suprired how they can design that in short time before.
     This project bussiness logic and UI really complex and i think only japanese people would like to use it lulz
+    It was operating by Agile model. Each spring is 2 weeks
 
-    `Rails4`, `Postgresql`, `Git`, `Slim`, `Javascript Coffee`, `Memcached`, Capistrano
+    `Rails4`, `Postgresql`, `Git`, `Slim`, `Javascript Coffee`, `Memcached`, `Capistrano`
 
   - *Anjer21* ( May 2016 - July 2016 )
 
     A website that allows you to rent a place to host a wedding. This is a small project.
     I learned a problem about temporary file handling when problems arise from it
 
-    `Rails4`, `mysql`, `Git`, `haml`, `jquery`
+    `Rails4`, `Mysql`, `Git`, `Haml`, `Jquery`
 
   - *Dentsuho* ( January 2017 - present )
 
