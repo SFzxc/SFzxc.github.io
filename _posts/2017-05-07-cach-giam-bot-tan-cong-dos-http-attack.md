@@ -8,16 +8,17 @@ comment: true
 
 *CentOs 7: Cách giảm bớt tấn công Dos thông qua Http Attack*
 
-Thật khó khăn để ngăn chặn hoàn toàn tấn công http, nhưng bạn có thể xoa dịu tấn công đó
+Thật khó khăn để ngăn chặn hoàn toàn tấn công http, nhưng bạn có thể xoa dịu tấn công đó.
+
 Bài viết này sẽ hướng đến việc ngăn chặn nếu có request hơn `30 lần` trong vòng `60 giây`
+
 Bạn có thể dựa trên đây để điều chỉnh hai thông số đó phù hợp với yêu cầu của mình
 
 Chúng ta sẽ bàn về cách xác định ước lượng thông số này sao cho phù hợp ở một bài khác.
 
-Attacker phải đợi 60 giây nữa trước khi có thể request lần server lần nữa. Và nếu vẫn tiếp tục
-cố tình request, nó toàn bộ request sẽ bị chặn.
+Attacker phải đợi 60 giây nữa trước khi có thể request lần server lần nữa. Và nếu vẫn tiếp tục cố tình request, nó toàn bộ request sẽ bị chặn.
 
-Bài hướng dẫn này sử dụng option `-direct` của `firewall-cmd` và không yêu cầu phải reboot
+Bài hướng dẫn này sử dụng option `--direct` của `firewall-cmd` và không yêu cầu phải reboot
 
 Chúng ta sẽ tạo một file có tên là `xt.conf` trong folder `/etc/modprobe.d/` và sau đó chèn vào
 file đó config như sau:
@@ -26,7 +27,7 @@ file đó config như sau:
 options xt_recent ip_pkt_list_tot=30
 ```
 
-Vì mặc định việc hệ thống chi đếm 20 hit mới nhất nên ta cần customize một chút, tăng nó lên 30
+Vì mặc định việc hệ thống chỉ đếm 20 hit mới nhất nên ta cần customize một chút, tăng nó lên 30
 
 Sau đó load new configuration chúng ta vừa mới tạo bằng câu lệnh:
 
