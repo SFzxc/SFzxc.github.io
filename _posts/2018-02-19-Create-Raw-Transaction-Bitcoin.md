@@ -39,19 +39,19 @@ Mình sẽ sử dụng cách 1
 
 Install `gem 'bitcoin-ruby'`
 
-Chúng ta sẽ sử dụng mạng testnet vì đơn giản là không có bitcoin
+Chúng ta sẽ sử dụng mạng testnet vì đơn giản là không tiền chơi hàng thật loll
 
 ```ruby
-require 'bitcoin-ruby'
+require 'bitcoin'
 
 include Bitcoin::Builder
 Bitcoin.network = :testnet3
 
-key      = Bitcoin::Key.generate
+key = Bitcoin::Key.generate
 # <Bitcoin::Key:0x007fbda21f2220 @key=#<OpenSSL::PKey::EC:0x007fbda21f2108>, @pubkey_compressed=true>
 priv_key = key.priv # 02a9f75bbbc0a876304ba6633fdf92879f9506ea0d0b572bce5e8afb93bd29e6
-pub_key  = key.pub # 030894fe082bfcd3b15a4573ad15a83b43af8b2d9a6ac34863445b86e8206f49c8
-addr     = key.addr # mwQe4KFo8s66BbtuFhGMpaC7mkGwi1idQo
+pub_key = key.pub # 030894fe082bfcd3b15a4573ad15a83b43af8b2d9a6ac34863445b86e8206f49c8
+addr = key.addr # mwQe4KFo8s66BbtuFhGMpaC7mkGwi1idQo
 
 # Nếu bạn đã có sẵn private_key rồi thì có thể import key từ định dạng base58 (WIF)
 key = Bitcoin::Key.from_base58('cMfszV3Hx56bDxEYQEPCEHDwYVDnKkx2pLpgvdYfAUpb7jBoj2EQ')
@@ -80,9 +80,11 @@ Bạn điền địa chỉ cần nhận bitcoin vào nhấn gửi bitcoin. Và �
 
 Có nhiều trang web online cho phép bạn xem các trạng thái của các transaction hay thông tin các địa chỉ như
 
-`https://live.blockcypher.com/btc-testnet/address/<địa chỉ bitcoin>`
+```
+https://live.blockcypher.com/btc-testnet/address/<địa chỉ bitcoin>
 
-`https://testnet.blockchain.info/tx/32f222ae2979497a56c44612994a7a5f547631d6fa99bf802e7b97f7033d93ae`
+https://testnet.blockchain.info/tx/32f222ae2979497a56c44612994a7a5f547631d6fa99bf802e7b97f7033d93ae
+```
 
 Tạo thêm 1 address nữa để nhận bitcoin. Mọi người có thể sử dụng các phương pháp ở trên để tạo.
 
@@ -94,9 +96,12 @@ Thêm một chút nữa là cần import prev_tx đó để.  Gem `bitcoin-ruby`
 
 Mình thì thích import từ hex format hơn, để hiểu rõ hơn về cấu trúc của tx hex format bạn có thể đọc lại chương Transaction trong cuốn sách trên.
 
-Trong tx trên `https://testnet.blockchain.info/tx/32f222ae2979497a56c44612994a7a5f547631d6fa99bf802e7b97f7033d93ae?format=hex`  thêm param format = hex thì sẽ nhận được
-
+Trong tx trên
 ```
+https://testnet.blockchain.info/tx/32f222ae2979497a56c44612994a7a5f547631d6fa99bf802e7b97f7033d93ae?format=hex
+
+thêm param format = hex thì sẽ nhận được
+
 01000000000101e97c87213558eacf9886f84045bfa1a894be50a3c6fe3b98443a953ba4089752010000001716001444148ec49aa12c4fef660d7118fe78ea75366319ffffffff0280a4bf07000000001976a914ae504b1c151b864cace83913eb1537383823f1f588ac0bee4ec30d00000017a914eda6073668307ed2851d849a41bd7badde77e5c0870247304402200e3ab54c5ec051d712101ddd9fdc6f91b77cade872d65047dcf8f0ad9f81390402205903a833a46a769c02b10895d8cc482e235a04971794cec588b0973280120f6e0121038e015bb2ecb9e674b5217b13c762b928e013d54d7994b9de586bcb098033e00800000000
 ```
 
