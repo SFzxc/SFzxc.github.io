@@ -8,23 +8,23 @@ comment: true
 
 Đầu năm nổi siêng viết một bài vậy
 
-### Mục tiêu
+## Mục tiêu
 
 Tạo ra một bitcoin transaction gửi bitcoin từ 1 địa chỉ A sang địa chỉ B.
 
 Hiểu được cấu tạo của raw transaction
 
-### Yêu cầu
+## Yêu cầu
 
 Đọc qua nội dung cuốn `Mastering Bitcoin` của` O'Reilly Media` từ chương 4 đến chương 7 để nắm căn bản các khái niệm về private key, public key, address, wallet và transaction.
 
-### Chuẩn bị
+## Chuẩn bị
 
 Chúng ta cần 1 địa chỉ bitcoin, và một ít bitcoin trong đó, 1 private key của địa chỉ trên để có thể sign raw transaction.
 
 
 
-*Tạo key/address*
+#### Tạo key/address
 
 
 
@@ -67,7 +67,7 @@ Có một bạn hỏi mình là có trường hợp nào mà attacker generate k
 
 
 
-*Get some btc*
+#### Get some btc
 
 
 
@@ -103,7 +103,7 @@ Trong tx trên `https://testnet.blockchain.info/tx/32f222ae2979497a56c44612994a7
 
 
 
-*Create a raw transaction*
+#### Create a raw transaction
 
 
 
@@ -130,7 +130,7 @@ prev_tx_output_index = 0
 tx = Bitcoin::Protocol::Tx.new
 tx.add_in Bitcoin::Protocol::TxIn.new(prev_tx.binary_hash, prev_tx_output_index, 0)
 tx.add_out Bitcoin::Protocol::TxOut.value_to_address(10_000_000, recipient_addr)
-tx.add_out Bitcoin::Protocol::TxOut.value_to_address(90_000_000, change_addr)
+tx.add_out Bitcoin::Protocol::TxOut.value_to_address(90_000_000, change_addr) # Carefully here
 sig = key.sign(tx.signature_hash_for_input(0, prev_tx))
 tx.in[0].script_sig = Bitcoin::Script.to_signature_pubkey_script(sig, [key.pub].pack("H*"))
 
@@ -146,10 +146,17 @@ puts tx.to_payload.unpack("H*")[0] # hex binary
 ```
 
 Nếu verify_input_signature == true thì có nghĩa đó là đã được kí thành công, bạn chính là chủ của utxo đó.
+Có một lưu ý khá quan trọng ở đây chính là giá trị được add vào change_address. change output chính là chuyển ngược số
+bitcoin còn lại về lại chính địa chỉ đó, thường thì các exchange sẽ thay đổi địa chỉ mới khi 1 giao dịch được thực hiện
+và địa chỉ mới chính là change address. Ở đây mình để nguyên. Thứ nữa là phải tính toán giá trị này cẩn thận.
+Fee mining chính bằng hiệu của số tiền toàn bộ utxos trừ đi tổng số tiền recipient và change address nhận được
+Phần thừa chính là số btc miner nhận được. Ở đây mình để bừa giá trị của change_addr
+
+Việc để tx fee bao nhiêu cho hợp lý mình sẽ không bàn ở đây và hẹn ở một post khác.
 
 Đây là kết quả khi bạn chạy file trên
 
-```ruby
+```json
 
 "9d42f40aa83371a344b38750731b0aca18d81904cdb94c991475c520136da4fb"
 true
@@ -190,7 +197,7 @@ hex:
 
 
 
-*Broadcast*
+#### Broadcast
 
 
 
@@ -208,7 +215,7 @@ Có nhiều cách để broadcast:
 
 
 
-*End*
+#### End
 
 
 
