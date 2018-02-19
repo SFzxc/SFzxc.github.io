@@ -146,10 +146,13 @@ puts tx.to_payload.unpack("H*")[0] # hex binary
 ```
 
 Nếu verify_input_signature == true thì có nghĩa đó là đã được kí thành công, bạn chính là chủ của utxo đó.
+
 Có một lưu ý khá quan trọng ở đây chính là giá trị được add vào change_address. change output chính là chuyển ngược số
 bitcoin còn lại về lại chính địa chỉ đó, thường thì các exchange sẽ thay đổi địa chỉ mới khi 1 giao dịch được thực hiện
-và địa chỉ mới chính là change address. Ở đây mình để nguyên. Thứ nữa là phải tính toán giá trị này cẩn thận.
-Fee mining chính bằng hiệu của số tiền toàn bộ utxos trừ đi tổng số tiền recipient và change address nhận được
+và địa chỉ mới chính là change address. Ở đây mình để nguyên.
+
+Thứ nữa là phải tính toán giá trị này cẩn thận. Fee mining chính bằng hiệu của số tiền toàn bộ utxos trừ đi tổng số tiền recipient và change address nhận được
+
 Phần thừa chính là số btc miner nhận được. Ở đây mình để bừa giá trị của change_addr
 
 Việc để tx fee bao nhiêu cho hợp lý mình sẽ không bàn ở đây và hẹn ở một post khác.
