@@ -16,7 +16,7 @@ Hiểu được cấu tạo của raw transaction
 
 ## Yêu cầu
 
-Đọc qua nội dung cuốn `Mastering Bitcoin` của` O'Reilly Media` từ chương 4 đến chương 7 để nắm căn bản các khái niệm về private key, public key, address, wallet và transaction.
+Đọc qua nội dung cuốn [Mastering Bitcoin](https://github.com/bitcoinbook/bitcoinbook) của` O'Reilly Media` từ chương 4 đến chương 7 để nắm căn bản các khái niệm về private key, public key, address, wallet và transaction.
 
 ## Chuẩn bị
 
