@@ -156,7 +156,7 @@ Việc để tx fee bao nhiêu cho hợp lý mình sẽ không bàn ở đây v�
 
 Đây là kết quả khi bạn chạy file trên
 
-```json
+```
 
 "9d42f40aa83371a344b38750731b0aca18d81904cdb94c991475c520136da4fb"
 true
