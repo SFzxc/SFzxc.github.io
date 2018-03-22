@@ -6,11 +6,11 @@ categories: [bitcoin, blockchain, transaction, ruby]
 comment: true
 ---
 
-Làm thể nào để giải cứu một giao dịch bitcoin đang bị mắc kẹt
+## Làm thể nào để giải cứu một giao dịch bitcoin đang bị mắc kẹt
 
 Một giao dịch bị mắc kẹt là sao ta ?! Bạn vô tình hay cố ý trả công cho miner quá thấp(set phí mining quá thấp), transaction ngày qua ngày bị mắc kẹt trong mempool(1) vì không được miner đoái hoài đến. Ngày ngày trôi qua, bạn hối hận vì giao dịch mãi vẫn chưa được xác thực. Muốn nâng mining fee lên cho nhanh verify nhưng hông được vì tx một khi đã broadcast thì không thể thay đổi nội dung được nữa. Cùng đi tìm hiểu nguyên nhân tại sao set fee thấp lại bị mắc kẹt và cách giải quyết cho vấn đề này.
 
-Definations
+#### Definations
 
 Transaction: Như ý nghĩa của nó, mình sẽ viết tắt tx.
 
@@ -18,7 +18,7 @@ Bitcoin mempool: là nơi để chứa những giao dịch chưa được verify
 
 Miner: là những người sẽ sử dụng khả năng tính toán của máy tính để giải các thuật toán, xác nhận các giao dịch có hợp lệ hay không và thêm nó vào blockchain.
 
-Why Transactions Become Stuck
+#### Why Transactions Become Stuck
 
 Bitcoin tx fees thực sự khó khăn để hiểu vì liên quan đến nhiều concept khác nhau. Một chỉ số quan trọng mà bạn cần phải nhớ đó là mật độ phí giao dịch của bạn. Mật độ phí (d) được tính theo công thức fee giao dịch (f, đơn vị satoshis) trên từng size (s, đơn vị là bytes).
 
@@ -34,11 +34,11 @@ Hầu hết các block ngày nay đều full size, điều đó chứng tỏ r�
 
 ![mempool](/images/mempool.png)
 
-			https://bitcoinfees.earn.com/ Mempool hiện tại và  dự đoán mật độ BTC fee 
+https://bitcoinfees.earn.com/ Mempool hiện tại và  dự đoán mật độ BTC fee 
 
 Giải thích một chút về đồ thị phía trên, nhìn vào dòng đầu tiên, trong vòng 24 hours qua có 3392 unconfirmed transactions, đã đặt mức phí là 1 đến 10 satoshis/byte và được verify ngay ở block tiếp theo (delay 0).
 
-Child-Pays-for-Parent
+#### Child-Pays-for-Parent
 
 Lấy một ví dụ, tưởng tượng rằng Alice trả Bob 5 mBTC, với phí là 0.125 mBTC, (12,500 satoshis). Transaction size là 250 bytes suy ra mật độ phí là 50 satoshis/byte. Mật độ maket tx phí vào thời điểm đó đang là 150 satoshis/byte. Cho nên tại thời điểm Alice's fee chỉ bằng 1/3 so với mức cạnh tranh.
 
@@ -56,13 +56,13 @@ Trong đó fc là tổng phí tx con sẽ trả trong tx gửi cho David, d sẽ
 
 Sau khi kí tx gửi David và broadcast lên bitcoin network, bạn có thể dùng các block explorer để theo dõi số lượng confirmation của tx của Alice (tx cha) và David (tx con).
 
-Tóm váy
+#### Tóm váy
 
 Bài viết không đi sâu vào các bước technical cụ thể mà bàn về phương pháp và hướng giải quyết, hy vọng được đi chi tiết hơn ở các bài khác. Các bước trên đã được tested và đã hoạt động như mô tả. Tuy nhiên cần lưu ý một số điểm sau, fee thông dụng có thể dao động theo thời gian. Có thể fee như mô tả sẽ không giống như lúc bạn đó bài này, đôi lúc mempool quá thấp thì 1 satoshis/byte cũng sẽ được verify ở block tiếp theo. Bạn có thể theo dõi biểu đồ phí ở trang này. https://bitcoinfees.earn.com/ hoặc https://estimatefee.com/. Một điều quan trọng nữa là Bitcoin Nodes cũng có giới hạn kích thước mempool, nếu nó vượt ngưỡng thì nó sẽ xoá những tx chờ comfirm có density thấp từ dưới lên. Nếu điều này xảy ra bạn phải re-publish lại tx cha để publish được tx con.
 
 Việc giải cứu là không khó nếu dùng đúng công cụ và một ít thời gian để nghiên cứu.
 
-TL;DR
+#### TL;DR
 
 Các bước giải cứu 1 transaction bị mắc kẹt:
 
@@ -73,10 +73,10 @@ Các bước giải cứu 1 transaction bị mắc kẹt:
 
 
 
-References
+#### References
 
-How to Clear a Stuck Bitcoin Transaction by Rich Apodaca
+[How to Clear a Stuck Bitcoin Transaction](https://bitzuma.com/posts/how-to-clear-a-stuck-bitcoin-transaction/) by Rich Apodaca
 
-Mastering Bitcoin
+[Mastering Bitcoin](https://github.com/bitcoinbook/bitcoinbook)
 
-Transaction_fees
+[Transaction_fees](https://en.bitcoin.it/wiki/Transaction_fees)
