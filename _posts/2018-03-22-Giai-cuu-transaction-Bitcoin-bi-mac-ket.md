@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Giai cuu transaction Bitcoin bi mac ket"
+title:  "Giải cứu bitcoin transaction bị mắc kẹt"
 date:   2018-03-22 09:00:00 +0700
 categories: [bitcoin, blockchain, transaction, ruby]
 comment: true
@@ -22,7 +22,8 @@ Why Transactions Become Stuck
 
 Bitcoin tx fees thực sự khó khăn để hiểu vì liên quan đến nhiều concept khác nhau. Một chỉ số quan trọng mà bạn cần phải nhớ đó là mật độ phí giao dịch của bạn. Mật độ phí (d) được tính theo công thức fee giao dịch (f, đơn vị satoshis) trên từng size (s, đơn vị là bytes).
 
-	d=f/s
+```d=f/s
+```
 
 Trong những ngày đầu thuở sơ khai của Bitcoin, fee chỉ là một phần nhập rất nhỏ của miner. Nhưng ngày nay, nó thực sự khác biệt. Fee góp phần đáng kể vào doanh thu nên các miner cố gắng tối ưu hoá fees mỗi block đào được.
 
@@ -32,7 +33,7 @@ Hầu hết các block ngày nay đều full size, điều đó chứng tỏ r�
 
 ![mempool](/images/mempool.png)
 
-			-> (1) https://bitcoinfees.earn.com/ Mempool hiện tại và  dự đoán mật độ BTC fee <-
+			https://bitcoinfees.earn.com/ Mempool hiện tại và  dự đoán mật độ BTC fee 
 
 Giải thích một chút về đồ thị phía trên, nhìn vào dòng đầu tiên, trong vòng 24 hours qua có 3392 unconfirmed transactions, đã đặt mức phí là 1 đến 10 satoshis/byte và được verify ngay ở block tiếp theo (delay 0).
 
@@ -48,7 +49,9 @@ Giả dụ Bob nợ tiền David 2mBTC, giờ Bob sẽ tạo ra một giao dịc
 
 Trong đó fc là tổng phí tx con sẽ trả trong tx gửi cho David, d sẽ là maket fee density(mật độ phí trung bình để 1 tx được add vào block gần nhất - đồng nghĩa với việc verify sẽ độ tầm dưới 10 phút). b là tổng size của cả 2 transaction. Giải dụ mức phí thông dụng hiện tại là 150 satoshis/byte,  tổng kích thước cả 2 tx cha con là 75000 bytes (2x250 bytes), tx cha (tx của Alice đã bỏ ra ) nên bạn sẽ cần trả là:
 
-	150x500-12,500 = 62500, or 0.65200 mBTC.
+```
+150x500-12,500 = 62500, or 0.65200 mBTC
+```
 
 Sau khi kí tx gửi David và broadcast lên bitcoin network, bạn có thể dùng các block explorer để theo dõi số lượng confirmation của tx của Alice (tx cha) và David (tx con).
 
