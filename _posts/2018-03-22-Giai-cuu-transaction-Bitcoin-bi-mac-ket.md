@@ -22,7 +22,8 @@ Why Transactions Become Stuck
 
 Bitcoin tx fees thực sự khó khăn để hiểu vì liên quan đến nhiều concept khác nhau. Một chỉ số quan trọng mà bạn cần phải nhớ đó là mật độ phí giao dịch của bạn. Mật độ phí (d) được tính theo công thức fee giao dịch (f, đơn vị satoshis) trên từng size (s, đơn vị là bytes).
 
-```d=f/s
+```
+d=f/s
 ```
 
 Trong những ngày đầu thuở sơ khai của Bitcoin, fee chỉ là một phần nhập rất nhỏ của miner. Nhưng ngày nay, nó thực sự khác biệt. Fee góp phần đáng kể vào doanh thu nên các miner cố gắng tối ưu hoá fees mỗi block đào được.
