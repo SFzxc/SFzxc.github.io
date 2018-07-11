@@ -24,7 +24,7 @@ We need to create a place where the decoded data will be stored
 
 ```golang
 type User struct {
-	Username string `string:"username"`
+    Username string `string:"username"`
 }
 ```
 
@@ -35,7 +35,7 @@ var user User
 // Unmarshal Way
 func CreateUser(w http.ResponseWriter, r *http.Request) {
     body, _ := ioutil.ReadAll(r.Body)
-		err = json.Unmarshal(body, &user)
+    err = json.Unmarshal(body, &user)
 }
 
 // NewDecoder Way
