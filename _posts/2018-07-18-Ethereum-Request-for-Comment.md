@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Ethereum Request forComment"
+title:  "Ethereum Request for Comment"
 date:   2018-07-18 01:00:00 +0700
 categories: [Solidity, SmartContract, ERC]
 comment: true
