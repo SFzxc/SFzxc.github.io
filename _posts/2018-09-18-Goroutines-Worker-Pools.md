@@ -6,7 +6,7 @@ categories: [Goroutines, Golang, concurrency]
 comment: true
 ---
 
-Thông qua ví dụ dưới đây, chúng ta sẽ nhìn thấy được cách implement worker pool sử dụng goroutines và channels để giải quyết bài toàn n workers phải hoàn thành m jobs. Ai hoàn thành xong sớm sẽ tìm kiếm task còn lại để làm cho để khi tất cả hoàn thành.
+Thông qua ví dụ dưới đây, chúng ta sẽ nhìn thấy được cách sử dụng goroutines và channels trong Golang để giải quyết bài toàn n workers phải hoàn thành m jobs. Ai hoàn thành xong sớm sẽ tìm kiếm task còn lại để làm cho để khi tất cả hoàn thành.
 
 Những công nhân sẽ nhận việc (jobs channel) và báo cáo kết quả.
 
