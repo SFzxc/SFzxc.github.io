@@ -4,7 +4,7 @@ title: Giới thiệu
 permalink: /about/
 ---
 
-Mình là {{ site.author }}, mọi người hay gọi là {{ site.nickname }}. Blog này là nơi mình ghi lại những vấn đề gặp phải khi code và cách gỡ chúng: Ruby, Go, bảo mật web, Bitcoin, Ethereum và gần đây là smart contract.
+Mình là {{ site.author }}, mọi người hay gọi là {{ site.nickname }}. Blog này là nơi mình ghi lại chuyện làm công nghệ: AI, blockchain và smart contract, những bài toán gặp khi code, và cả những điều học được trên đường đi. Mấy bài Ruby, Go cũ vẫn để lại làm kỷ niệm.
 
 Coding, Drawing, Eating, no sleep!
 
