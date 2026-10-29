@@ -3,19 +3,23 @@ layout: default
 ---
 {% assign words = content | strip_html | number_of_words %}
 {% assign minutes = words | divided_by: 220 | plus: 1 %}
-<article class="post">
-  <header class="post-head col">
-    {% if page.categories.size > 0 %}<p class="eyebrow">{{ page.categories | join: ' · ' }}</p>{% endif %}
+<article class="post container">
+  <header class="post-head">
     <h1>{{ page.title }}</h1>
-    <p class="meta"><time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: '%d/%m/%Y' }}</time> · {{ minutes }} phút đọc</p>
   </header>
-
-  <div class="prose col">
+  <div class="post-body grid">
+    <dl class="post-meta">
+      <div><dt>Ngày đăng</dt><dd><time class="num" datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: '%d/%m/%Y' }}</time></dd></div>
+      <div><dt>Thời gian đọc</dt><dd>{{ minutes }} phút</dd></div>
+      {% if page.categories.size > 0 %}<div><dt>Chủ đề</dt><dd>{% for c in page.categories %}<a href="{{ '/chu-de/' | relative_url }}#{{ c | slugify }}">{{ c }}</a>{% unless forloop.last %}, {% endunless %}{% endfor %}</dd></div>{% endif %}
+    </dl>
+    <div class="prose">
 {{ content }}
+    </div>
   </div>
 
   {% if page.previous or page.next %}
-  <nav class="post-nav col" aria-label="Bài khác">
+  <nav class="post-nav" aria-label="Bài khác">
     {% if page.next %}<a class="newer" href="{{ page.next.url | relative_url }}"><span>Bài mới hơn</span>{{ page.next.title }}</a>{% endif %}
     {% if page.previous %}<a class="older" href="{{ page.previous.url | relative_url }}"><span>Bài cũ hơn</span>{{ page.previous.title }}</a>{% endif %}
   </nav>
