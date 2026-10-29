@@ -3,7 +3,7 @@ layout: default
 ---
 {% assign latest = site.posts.first %}
 <section class="hero container" aria-labelledby="hero-head">
-  <h1 id="hero-head" class="hero-head">{{ site.description }}</h1>
+  <h1 id="hero-head" class="visually-hidden">Bài viết trên {{ site.title }}</h1>
   {% if latest %}
   {% if latest.summary %}{% assign summary = latest.summary %}{% else %}{% assign summary = latest.description | default: latest.excerpt | strip_html | normalize_whitespace | split: '. ' | first | append: '.' %}{% endif %}
   <article class="latest" aria-labelledby="lead-title">

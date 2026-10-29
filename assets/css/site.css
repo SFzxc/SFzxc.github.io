@@ -3,7 +3,8 @@
  * axes: light/grotesk/blue · posture: restrained · contrast: pass · fold: pass · modes: light+dark · imagery: none, the material is words · v2.0.0 */
 /* Hallmark · pre-emit critique: P4 H4 E4 S4 R5 V3 · weakest: V, a dated list is how every blog looks; the years held large in the margin make it read as a log, the word in the blog's own name */
 /* Hallmark · hero-review: fix · 5 findings · 3 resolved 1 partial 1 unresolved (no still of the interactive lab yet) */
-/* Hallmark · finish-review: subagent · 6 findings · 5 resolved 1 unresolved · gap: the owner's tagline stays above the lead, his own sentence, as a quiet line in the body face */
+/* Hallmark · finish-review: subagent · 6 findings · 6 resolved · gap: none; the tagline left the home page at the owner's request */
+/* Hallmark · dropped the home tagline · the owner asked for it off the home page, since returning readers come for posts and the about page already says it */
 /* Hallmark · waive 59 · Index-First, a dense list parted by hairlines · the archive is one log, and a 120px gap between years would break it into islands */
 /* Hallmark · waive 78 · the topic page h2s head 23 lists of one to three posts · at 52px the topic names would outweigh the posts beneath them */
 /* Hallmark · waive 79 · the about page holds four short lines and no visual · stretching it to the fold would mean writing copy the owner never wrote */
@@ -46,9 +47,8 @@
 .site-main { padding-block: var(--space-2xl) var(--space-3xl); }
 
 /* Home: one sentence, then the newest post set large */
-.hero { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-xl); }
-.hero-head { max-width: 52ch; font-family: var(--font-body); font-weight: 400; letter-spacing: 0; font-size: var(--text-lead); line-height: 1.45; color: var(--color-ink-2); text-wrap: balance; }
-.latest { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gap-columns); row-gap: var(--space-sm); padding-top: var(--space-xl); border-top: var(--rule-hair) solid var(--color-ink); }
+.hero { display: grid; grid-template-columns: minmax(0, 1fr); }
+.latest { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gap-columns); row-gap: var(--space-sm); }
 .lead-date { grid-column: 1 / span 3; display: grid; align-content: start; gap: var(--space-xs); font-family: var(--font-display); font-weight: 700; font-size: var(--text-section); line-height: 1; letter-spacing: var(--tracking-display); color: var(--color-ink); }
 .lead-date small { font-family: var(--font-body); font-weight: 400; font-size: var(--text-sm); letter-spacing: 0; color: var(--color-muted); }
 .lead-body { grid-column: 4 / -1; display: grid; gap: var(--space-lg); min-width: 0; }
@@ -161,9 +161,7 @@
   .site-main { padding-block: var(--space-xl) var(--space-2xl); }
   .head { flex-wrap: wrap; row-gap: 0; min-height: 0; padding-block: var(--space-xs); }
   .nav { order: 3; width: 100%; overflow-x: auto; gap: var(--space-md); }
-  .hero-head { font-size: var(--text-md); }
-  .latest { padding-top: var(--space-lg); }
-  .entry, .topic .entry { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-2xs); }
+    .entry, .topic .entry { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-2xs); }
   .entry-topics { text-align: left; }
   .entry-title { font-size: var(--text-md); }
   .post-meta { display: flex; flex-wrap: wrap; gap: var(--space-sm) var(--space-lg); }
