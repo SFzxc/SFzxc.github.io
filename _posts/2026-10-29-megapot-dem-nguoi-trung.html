@@ -5,6 +5,7 @@ date: 2026-10-29 21:00:00 +0700
 categories: [Solidity, SmartContract, Megapot]
 permalink: /megapot-dem-nguoi-trung/
 interactive: true
+summary: "Contract lưu vé bằng bitmap, đếm người trúng bằng bảng đếm theo nhóm số, và chia giải mà không bao giờ hết gas. Có phòng thí nghiệm để tự chốt một kỳ."
 description: "Megapot bán hàng nghìn vé mỗi ngày nhưng chốt kỳ không dò lại vé nào. Bài này phân tích cách contract lưu vé bằng bitmap, đếm người trúng bằng bảng đếm theo nhóm số và bao hàm – loại trừ, và chia giải mà không bao giờ hết gas. Có phòng thí nghiệm để tự chốt một kỳ."
 ---
 <!doctype html>
@@ -188,9 +189,9 @@ hr{border:0;border-top:1px solid var(--line);margin:3em 0 0}
 
 /* thanh quay về trang chủ blog, kèm nút đổi nền sáng / tối */
 .sitebar{max-width:1040px;margin:0 auto;padding-top:14px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));font-family:var(--f-mono);font-size:.8rem;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.sitebar a{color:var(--muted);text-decoration:none}
+.sitebar a{color:var(--ink);text-decoration:none;font-family:var(--f-display);font-weight:700;font-size:1.25rem;letter-spacing:-0.02em}
 .sitebar a:hover{color:var(--num)}
-.theme-toggle{display:inline-grid;place-items:center;width:34px;height:34px;flex:none;padding:0;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--muted);cursor:pointer;transition:color .15s,border-color .15s}
+.theme-toggle{display:inline-grid;place-items:center;width:44px;height:44px;flex:none;padding:0;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--muted);cursor:pointer;transition:color .15s,border-color .15s}
 .theme-toggle:hover{color:var(--ink);border-color:var(--num)}
 .theme-toggle:focus-visible{outline:2px solid var(--num);outline-offset:2px}
 .theme-toggle svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -206,7 +207,7 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
 </style>
 </head>
 <body>
-<header class="sitebar"><a href="/">← Tobi.log</a>
+<header class="sitebar"><a href="/">Tobi.log</a>
 {% include theme-toggle.html %}
 </header>
 <div class="wrap">

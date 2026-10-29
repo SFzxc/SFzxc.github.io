@@ -1,37 +1,38 @@
 ---
 layout: default
 ---
-<section class="intro col">
-  <p class="eyebrow">Blog của {{ site.author }}</p>
-  <h1 class="intro-title">{{ site.title }}</h1>
-  <p class="intro-lead">{{ site.description }}</p>
-</section>
-
 {% assign latest = site.posts.first %}
-{% if latest %}
-<section class="col" aria-label="Bài mới nhất">
-  <a class="feature" href="{{ latest.url | relative_url }}">
-    <p class="eyebrow">Mới nhất{% if latest.interactive %} · <span class="tag-live">có minh họa tương tác</span>{% endif %}</p>
-    <h2>{{ latest.title }}</h2>
-    {% capture latest_desc %}{% if latest.description %}{{ latest.description }}{% else %}{{ latest.excerpt }}{% endif %}{% endcapture %}
-    <p class="feature-desc">{{ latest_desc | strip_html | normalize_whitespace | truncatewords: 45 }}</p>
-    <p class="meta"><time datetime="{{ latest.date | date_to_xmlschema }}">{{ latest.date | date: '%d/%m/%Y' }}</time>{% if latest.categories.size > 0 %} · {{ latest.categories | join: ' · ' }}{% endif %}</p>
-  </a>
+<section class="hero container" aria-labelledby="hero-head">
+  <h1 id="hero-head" class="hero-head">{{ site.description }}</h1>
+  {% if latest %}
+  {% if latest.summary %}{% assign summary = latest.summary %}{% else %}{% assign summary = latest.description | default: latest.excerpt | strip_html | normalize_whitespace | split: '. ' | first | append: '.' %}{% endif %}
+  <article class="latest" aria-labelledby="lead-title">
+    <time class="lead-date num" datetime="{{ latest.date | date_to_xmlschema }}">{{ latest.date | date: '%d/%m' }} <small>{{ latest.date | date: '%Y' }}</small></time>
+    <div class="lead-body">
+      <h2 id="lead-title" class="lead-title">{{ latest.title }}</h2>
+      <p class="lead-summary">{{ summary }}</p>
+      <p class="lead-actions">
+        <a class="read" href="{{ latest.url | relative_url }}" aria-describedby="lead-title">Đọc bài</a>
+        {% if latest.interactive %}<span class="flag">Có minh họa tương tác</span>{% endif %}
+        {% if latest.categories.size > 0 %}<span class="flag">{{ latest.categories | join: ', ' }}</span>{% endif %}
+      </p>
+    </div>
+  </article>
+  {% endif %}
 </section>
-{% endif %}
 
-<section class="archive col" aria-labelledby="archive-title">
-  <h2 id="archive-title" class="section-label">Tất cả bài viết</h2>
-  {% assign years = site.posts | group_by_exp: "p", "p.date | date: '%Y'" %}
+{% assign rest = site.posts | where_exp: "p", "p.url != latest.url" %}
+{% assign years = rest | group_by_exp: "p", "p.date | date: '%Y'" %}
+<section class="archive container" aria-label="Các bài trước">
   {% for year in years %}
   <div class="year">
-    <h3 class="year-label">{{ year.name }}</h3>
-    <ul class="post-list">
+    <h2 class="year-num num">{{ year.name }}</h2>
+    <ul class="entries">
       {% for post in year.items %}
-      <li>
-        <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: '%d/%m' }}</time>
-        <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
-        <span class="row-tags">{% if post.interactive %}<span class="tag-live">tương tác</span>{% endif %}{% for c in post.categories limit: 3 %}<span>{{ c }}</span>{% endfor %}</span>
+      <li class="entry">
+        <time class="num" datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: '%d/%m' }}</time>
+        <p class="entry-title"><a href="{{ post.url | relative_url }}">{{ post.title }}</a></p>
+        <p class="entry-topics">{{ post.categories | join: ', ' }}</p>
       </li>
       {% endfor %}
     </ul>
