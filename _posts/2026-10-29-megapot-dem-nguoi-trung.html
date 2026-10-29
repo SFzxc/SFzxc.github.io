@@ -216,7 +216,8 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
 <header class="col flow">
   <div class="eyebrow">Smart contract · xổ số on-chain · tối ưu gas</div>
   <h1>Một triệu vé, không dò lại vé nào: Megapot đếm người trúng on-chain kiểu gì?</h1>
-  <p class="deck">Mỗi ngày xổ số on-chain Megapot bán hàng nghìn vé, nhưng khi chốt kỳ contract không mở một vé nào ra để so. Vậy làm sao nó biết ai trúng, trúng hạng nào, mỗi người được bao nhiêu tiền, mà không bao giờ hết gas? Và vì sao giải của bạn không bị chia nhỏ khi nhiều người khác cùng trúng?</p>
+  <p class="byline">Megapot là xổ số chạy bằng smart contract trên mạng Base: mua vé bằng USDC, mỗi ngày quay một kỳ, tiền thưởng trả thẳng từ contract. Bài viết phân tích kỹ thuật, không phải lời khuyên chơi xổ số hay đầu tư.</p>
+  <p class="deck">Mỗi ngày Megapot bán hàng nghìn vé, nhưng khi chốt kỳ contract không mở một vé nào ra để so. Vậy làm sao nó biết ai trúng, trúng hạng nào, mỗi người được bao nhiêu tiền, mà không bao giờ hết gas? Và vì sao giải của bạn không bị chia nhỏ khi nhiều người khác cùng trúng?</p>
   <p>Bài này đi theo đường đi của một tấm vé qua contract: mua, lưu, quay, chốt, chia tiền, claim. Mỗi phần mở đầu bằng một câu hỏi, thử cách làm naive trước, xem nó gãy ở đâu, rồi mới xem Megapot giải thế nào.</p>
   <p class="small muted">Nếu bạn chơi Megapot và chỉ muốn biết giải được tính ra sao, hãy đọc <a href="#q7">Câu 7</a> và phần vé trùng ở cuối <a href="#q4">Câu 4</a>. Nếu bạn viết smart contract, phần đáng đọc nhất là Câu 4 đến Câu 6, phòng thí nghiệm và bảng tổng kết cuối bài.</p>
   <p class="byline">Dựa trên mã nguồn bản audit Code4rena (11/2025). Contract đang chạy trên Base có thể khác bản này.</p>
@@ -662,7 +663,6 @@ totalPayout += tierPayout × (uniqueResult[i] + dupResult[i]);   <span class="c"
     <li>Repo audit: <a href="https://github.com/code-423n4/2025-11-megapot" target="_blank" rel="noopener">code-423n4/2025-11-megapot</a>, các file <code>contracts/lib/TicketComboTracker.sol</code>, <code>contracts/lib/Combinations.sol</code>, <code>contracts/Jackpot.sol</code>, <code>contracts/GuaranteedMinimumPayoutCalculator.sol</code>.</li>
     <li>Bài trước trong loạt này: Máy quay số Megapot (cách Pyth Entropy tạo số ngẫu nhiên).</li>
   </ul>
-  <p class="small muted">Bài viết phân tích kỹ thuật, không phải lời khuyên chơi xổ số hay đầu tư.</p>
 </section>
 
 </article>
