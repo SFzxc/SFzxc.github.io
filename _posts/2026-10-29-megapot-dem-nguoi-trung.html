@@ -1,0 +1,874 @@
+---
+layout: null
+title: "Một triệu vé, không dò lại vé nào: Megapot đếm người trúng on-chain kiểu gì?"
+date: 2026-10-29 21:00:00 +0700
+categories: [Solidity, SmartContract, Megapot]
+permalink: /megapot-dem-nguoi-trung/
+interactive: true
+description: "Megapot bán hàng nghìn vé mỗi ngày nhưng chốt kỳ không dò lại vé nào. Bài này phân tích cách contract lưu vé bằng bitmap, đếm người trúng bằng bảng đếm theo nhóm số và bao hàm – loại trừ, và chia giải mà không bao giờ hết gas. Có phòng thí nghiệm để tự chốt một kỳ."
+---
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Megapot bán hàng nghìn vé mỗi ngày nhưng chốt kỳ không dò lại vé nào. Phân tích cách contract lưu vé bằng bitmap, đếm người trúng bằng bảng đếm theo nhóm số và bao hàm – loại trừ, và chia giải mà không bao giờ hết gas.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Một triệu vé, không dò lại vé nào: Megapot đếm người trúng on-chain kiểu gì?">
+<meta property="og:description" content="Megapot bán hàng nghìn vé mỗi ngày nhưng chốt kỳ không dò lại vé nào. Phân tích cách contract lưu vé bằng bitmap, đếm người trúng bằng bảng đếm theo nhóm số và bao hàm – loại trừ, và chia giải mà không bao giờ hết gas.">
+<meta name="twitter:card" content="summary">
+<title>Megapot đếm người trúng on-chain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: một cột bài viết ~700px, hình minh họa và phòng thí nghiệm tràn tới ~1000px.
+   Màu mang nghĩa: xanh dương = số thường, hổ phách = bonus, xanh ngọc = phần trúng / kết quả đúng, đỏ = chi phí, cảnh báo. */
+:root{
+  --paper:#F4F6F9; --panel:#FFFFFF; --ink:#141C29; --muted:#56627A; --line:#D7DDE6; --code:#EBEFF5;
+  --num:#2B57CF; --num-soft:#E1E8FB;
+  --bonus:#A86400; --bonus-soft:#FAEDD6;
+  --hit:#0B7A63; --hit-soft:#D9F0E9;
+  --bad:#B83232; --bad-soft:#F9E1E1;
+  --f-display:"Bricolage Grotesque","Be Vietnam Pro",system-ui,sans-serif;
+  --f-body:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0E1219; --panel:#151A23; --ink:#E4E8EF; --muted:#98A2B4; --line:#29313F; --code:#1A202B;
+  --num:#89A5FF; --num-soft:#1B2645;
+  --bonus:#F2AE48; --bonus-soft:#382912;
+  --hit:#47CCAA; --hit-soft:#0F3029;
+  --bad:#FF8686; --bad-soft:#3A1818;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --paper:#0E1219; --panel:#151A23; --ink:#E4E8EF; --muted:#98A2B4; --line:#29313F; --code:#1A202B;
+  --num:#89A5FF; --num-soft:#1B2645;
+  --bonus:#F2AE48; --bonus-soft:#382912;
+  --hit:#47CCAA; --hit-soft:#0F3029;
+  --bad:#FF8686; --bad-soft:#3A1818;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1040px;margin:0 auto;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:48px 96px}
+.col{max-width:700px;margin-inline:auto}
+.wide{max-width:1000px;margin-inline:auto}
+article > * + *{margin-top:1.05em}
+.flow > * + *{margin-top:1em}
+h1,h2,h3{font-family:var(--f-display);line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(2.1rem,5.4vw,3.5rem);letter-spacing:-0.02em;font-weight:700}
+h2{font-size:clamp(1.45rem,3.1vw,1.95rem);letter-spacing:-0.01em;font-weight:700;margin-top:2.6em !important}
+h3{font-size:1.15rem;font-weight:600;margin-top:1.8em !important}
+p{margin:0}
+a{color:var(--num);text-underline-offset:3px}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--num);outline-offset:2px;border-radius:4px}
+.eyebrow{font-family:var(--f-mono);font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.deck{font-size:1.18rem;color:var(--muted);max-width:40em}
+.byline{font-size:.9rem;color:var(--muted)}
+strong{font-weight:600}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--code);padding:.1em .35em;border-radius:4px}
+pre{margin:0;background:var(--code);border-radius:8px;padding:16px 18px;overflow-x:auto;font-family:var(--f-mono);font-size:.82rem;line-height:1.6}
+p code,li code,td code,.what code{overflow-wrap:anywhere}
+pre code{background:none;padding:0;font-size:inherit}
+pre .c{color:var(--muted)} pre .n{color:var(--num)} pre .b{color:var(--bonus)} pre .h{color:var(--hit)} pre .r{color:var(--bad)}
+.label-file{font-family:var(--f-mono);font-size:.75rem;color:var(--muted);display:block;margin-bottom:6px}
+.codeblock{min-width:0}
+.t-num{color:var(--num);font-weight:600} .t-bonus{color:var(--bonus);font-weight:600} .t-hit{color:var(--hit);font-weight:600} .t-bad{color:var(--bad);font-weight:600}
+
+/* Hero */
+.hero-stat{display:flex;flex-wrap:wrap;gap:12px 28px;margin-top:28px !important;align-items:flex-end}
+.hero-stat .big{font-family:var(--f-display);font-size:clamp(2.6rem,7vw,4.2rem);font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.hero-stat .big.hit{color:var(--hit)} .hero-stat .big.bad{color:var(--bad)}
+.hero-stat .cap{font-size:.9rem;color:var(--muted);max-width:15em;line-height:1.4;margin-top:6px}
+.tldr{border-left:3px solid var(--hit);padding:4px 0 4px 18px;margin-top:32px !important}
+.tldr ul{margin:8px 0 0;padding-left:1.1em}
+.tldr li + li{margin-top:6px}
+
+/* Figures */
+figure{margin:0}
+figure.fig{margin-top:28px !important}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;min-width:0}
+.svgbox{overflow-x:auto}
+.svgbox svg{display:block;width:100%;height:auto;color:var(--ink)}
+figcaption{font-size:.88rem;color:var(--muted);margin-top:10px;max-width:700px}
+svg text{font-family:var(--f-body);fill:currentColor}
+svg .mono{font-family:var(--f-mono)}
+svg .sm{font-size:12px} svg .md{font-size:13.5px} svg .lg{font-size:15px;font-weight:600}
+svg .mut{fill:var(--muted)}
+svg .axis{stroke:var(--muted);stroke-width:1.5;fill:none}
+svg .grid{stroke:var(--line);stroke-width:1}
+svg .s-bad{stroke:var(--bad);fill:none} svg .s-hit{stroke:var(--hit);fill:none} svg .s-num{stroke:var(--num);fill:none}
+svg .f-bad{fill:var(--bad)} svg .f-hit{fill:var(--hit)} svg .f-num{fill:var(--num)}
+svg .f-bad-soft{fill:var(--bad-soft)} svg .f-hit-soft{fill:var(--hit-soft)}
+
+/* Bit strip */
+.strips{overflow-x:auto;padding-bottom:4px}
+.strip{display:grid;grid-template-columns:92px repeat(41, 22px);gap:2px;align-items:center;min-width:max-content}
+.strip + .strip{margin-top:4px}
+.strip .lbl{font-size:.8rem;color:var(--muted);padding-right:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.strip .lbl b{color:var(--ink);font-weight:600}
+.cell{height:24px;border-radius:4px;background:var(--code);display:grid;place-items:center;font-family:var(--f-mono);font-size:.72rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.cell.on{background:var(--num);color:var(--panel);font-weight:500}
+.cell.on.bz{background:var(--bonus)}
+.cell.on.hz{background:var(--hit)}
+.cell.zone-b{box-shadow:inset 0 -2px 0 var(--bonus-soft)}
+.cell.zero{opacity:.45}
+.idx{display:grid;grid-template-columns:92px repeat(41, 22px);gap:2px;min-width:max-content;margin-top:4px}
+.idx span{font-family:var(--f-mono);font-size:.62rem;color:var(--muted);text-align:center}
+.zones{display:grid;grid-template-columns:92px 220px 718px 22px;gap:2px;min-width:max-content;margin-bottom:6px;font-size:.74rem}
+.zones span{border-bottom:2px solid;padding-bottom:2px;text-align:center;font-family:var(--f-mono)}
+.zones .zb{border-color:var(--bonus);color:var(--bonus)} .zones .zn{border-color:var(--num);color:var(--num)} .zones .z0{border-color:var(--line);color:var(--muted)}
+.readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:14px}
+.readout > div{border:1px solid var(--line);border-radius:8px;padding:8px 12px;min-width:0}
+.readout .k{font-size:.76rem;color:var(--muted)}
+.readout .v{font-family:var(--f-mono);font-size:.88rem;word-break:break-all}
+
+/* Controls */
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:.8rem;color:var(--muted)}
+input[type=text],select,textarea{font-family:var(--f-mono);font-size:.88rem;padding:8px 10px;border-radius:8px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);min-width:0}
+textarea{width:100%;line-height:1.55;resize:vertical}
+.err{color:var(--bad);font-size:.88rem;margin-top:10px}
+.err:empty{display:none}
+
+/* Subset fan */
+.fan{display:grid;gap:10px;margin-top:6px}
+.fanrow{display:grid;grid-template-columns:64px minmax(0,1fr);gap:10px;align-items:start}
+.fanrow .k{font-family:var(--f-mono);font-size:.78rem;color:var(--muted);padding-top:4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--f-mono);font-size:.76rem;padding:3px 8px;border-radius:6px;background:var(--num-soft);color:var(--ink);white-space:nowrap}
+.chip i{font-style:normal;color:var(--muted);margin-left:6px}
+.fan-total{margin-top:12px;font-size:.9rem}
+
+/* Tables */
+.tablebox{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:520px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--line)}
+th{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500}
+td.mono,th.mono{font-family:var(--f-mono);font-size:.82rem}
+td.r,th.r{text-align:right}
+tr.hl td{background:var(--hit-soft)}
+
+/* Callouts */
+.note{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 18px;font-size:.95rem}
+.note.warn{border-color:var(--bad);background:var(--bad-soft)}
+.lesson{border-left:3px solid var(--num);padding:2px 0 2px 16px;font-size:.96rem}
+.lesson b{display:block;font-family:var(--f-display);font-size:1.02rem;font-weight:600;margin-bottom:2px}
+
+/* Lab */
+.lab{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin-top:28px !important}
+.lab h3{margin-top:0 !important}
+.lab-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:20px;margin-top:14px}
+@media (max-width:760px){.lab-grid{grid-template-columns:minmax(0,1fr)}}
+.lab-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:14px}
+.lab-stats > div{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.lab-stats .k{font-size:.78rem;color:var(--muted)}
+.lab-stats .v{font-family:var(--f-display);font-size:1.45rem;font-weight:700;font-variant-numeric:tabular-nums}
+.ok{color:var(--hit);font-weight:600} .fail{color:var(--bad);font-weight:600}
+
+/* Flow */
+.flowsteps{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.flowsteps li{display:grid;grid-template-columns:110px minmax(0,1fr);gap:14px;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel)}
+.flowsteps .when{font-family:var(--f-mono);font-size:.76rem;color:var(--muted);padding-top:2px}
+.flowsteps .what{min-width:0;font-size:.94rem}
+.flowsteps .what code{font-size:.8em}
+.flowsteps li.buy{border-left:3px solid var(--num)} .flowsteps li.draw{border-left:3px solid var(--bonus)} .flowsteps li.settle{border-left:3px solid var(--hit)} .flowsteps li.claim{border-left:3px solid var(--muted)}
+@media (max-width:520px){ body{font-size:16px} .lab{padding:16px} .box{padding:12px} .flowsteps li{grid-template-columns:minmax(0,1fr);gap:4px} }
+
+.sources{font-size:.9rem}
+.sources li + li{margin-top:6px}
+hr{border:0;border-top:1px solid var(--line);margin:3em 0 0}
+.muted{color:var(--muted)} .small{font-size:.88rem}
+@media (prefers-reduced-motion: reduce){ *{transition:none !important;animation:none !important} }
+
+
+/* thanh quay về trang chủ blog */
+.sitebar{max-width:1040px;margin:0 auto;padding-top:14px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));font-family:var(--f-mono);font-size:.8rem}
+.sitebar a{color:var(--muted);text-decoration:none}
+.sitebar a:hover{color:var(--num)}
+/* reset nhỏ thay cho khung mà trang artifact tự thêm */
+body{margin:0} img{max-width:100%} [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<nav class="sitebar"><a href="/">← Stack Problems</a></nav>
+<div class="wrap">
+<article>
+
+<header class="col flow">
+  <div class="eyebrow">Smart contract · xổ số on-chain · tối ưu gas</div>
+  <h1>Một triệu vé, không dò lại vé nào: Megapot đếm người trúng on-chain kiểu gì?</h1>
+  <p class="deck">Mỗi ngày xổ số on-chain Megapot bán hàng nghìn vé, nhưng khi chốt kỳ contract không mở một vé nào ra để so. Vậy làm sao nó biết ai trúng, trúng hạng nào, mỗi người được bao nhiêu tiền, mà không bao giờ hết gas? Và vì sao giải của bạn không bị chia nhỏ khi nhiều người khác cùng trúng?</p>
+  <p>Bài này đi theo đường đi của một tấm vé qua contract: mua, lưu, quay, chốt, chia tiền, claim. Mỗi phần mở đầu bằng một câu hỏi, thử cách làm naive trước, xem nó gãy ở đâu, rồi mới xem Megapot giải thế nào.</p>
+  <p class="small muted">Nếu bạn chơi Megapot và chỉ muốn biết giải được tính ra sao, hãy đọc <a href="#q7">Câu 7</a> và phần vé trùng ở cuối <a href="#q4">Câu 4</a>. Nếu bạn viết smart contract, phần đáng đọc nhất là Câu 4 đến Câu 6, phòng thí nghiệm và bảng tổng kết cuối bài.</p>
+  <p class="byline">Dựa trên mã nguồn bản audit Code4rena (11/2025). Contract đang chạy trên Base có thể khác bản này.</p>
+
+  <div class="hero-stat">
+    <div><div class="big hit">310</div><div class="cap">lần đọc dữ liệu để chốt một kỳ có 10 bonus, dù bán bao nhiêu vé</div></div>
+    <div><div class="big bad">31</div><div class="cap">lần ghi dữ liệu mà mỗi vé phải trả lúc mua</div></div>
+  </div>
+
+  <div class="tldr">
+    <strong>Tóm tắt</strong>
+    <ul>
+      <li>Vé là <strong>một con số <code>uint256</code></strong>: bit n bật nghĩa là có chọn số n. So hai vé chỉ cần một phép AND.</li>
+      <li>Lúc mua, contract cập nhật một <strong>bảng đếm</strong> lưu trên chain: mỗi ô ghi có bao nhiêu vé chứa một nhóm số nào đó, và mỗi vé làm tăng 31 ô.</li>
+      <li>Lúc chốt, nó chỉ đọc 31 tập con của bộ số trúng, rồi dùng <strong>bao hàm – loại trừ</strong> để ra chính xác số vé ở từng hạng.</li>
+      <li>Tiền thưởng chia theo <strong>mọi tổ hợp có thể trúng</strong>, kể cả tổ hợp chưa ai mua. Vì vậy giải của bạn không giảm khi nhiều người khác cùng trúng hạng đó.</li>
+    </ul>
+  </div>
+</header>
+
+<section class="col flow">
+  <h2>Đường đi của một tấm vé</h2>
+  <p>Đây là toàn bộ vòng đời một kỳ quay trong contract. Các câu hỏi bên dưới đi lần lượt qua từng bước.</p>
+</section>
+<figure class="fig col">
+  <ol class="flowsteps">
+    <li class="buy"><div class="when">mở kỳ</div><div class="what"><code>TicketComboTracker.init(30, bonusballMax, 5)</code> tạo một bảng đếm trống cho kỳ mới. Cấu hình chia giải được chụp lại cho kỳ này.</div></li>
+    <li class="buy"><div class="when">mua vé</div><div class="what"><code>buyTickets</code> → với mỗi vé: đổi sang bitmap, kiểm tra trùng, tăng 31 ô trong bảng đếm, mint NFT chứa bitmap vé. Ref được ghi lúc này. <a href="#q2">Câu 2</a>, <a href="#q4">4</a>, <a href="#q5">5</a></div></li>
+    <li class="draw"><div class="when">quay số</div><div class="what">Pyth Entropy trả số ngẫu nhiên và gọi <code>scaledEntropyCallback</code> với một mức gas cố định. <a href="#q1">Câu 1</a></div></li>
+    <li class="settle"><div class="when">chốt kỳ</div><div class="what"><code>countTierMatchesWithBonusball</code> đọc 31 × bonusballMax ô, chạy bao hàm – loại trừ, ra số vé 12 hạng. <code>payoutCalculator</code> tính và lưu tiền mỗi hạng. Lưu kết quả, mở kỳ mới. Tất cả trong một giao dịch. <a href="#q6">Câu 6</a>, <a href="#q7">7</a></div></li>
+    <li class="claim"><div class="when">claim</div><div class="what">Người chơi gửi NFT vé. <code>popCount(vé &amp; kếtQuả)</code> ra hạng, trả tiền theo mức đã lưu, chia phần cho ref, burn NFT. <a href="#q3">Câu 3</a></div></li>
+  </ol>
+</figure>
+
+<!-- 1 -->
+<section class="col flow">
+  <h2 id="q1">Câu 1: chốt kỳ thì khó ở chỗ nào?</h2>
+  <p>Khi Pyth Entropy trả về số ngẫu nhiên, nó gọi hàm <code>scaledEntropyCallback</code> của Jackpot. Trong đúng một giao dịch đó, contract phải biết mỗi hạng giải có bao nhiêu vé trúng để tính tiền cho từng hạng.</p>
+  <p><strong>Cách naive</strong> ai cũng nghĩ ra đầu tiên: lưu danh sách vé, lúc chốt thì lặp qua từng vé và so với kết quả.</p>
+  <div class="codeblock">
+    <span class="label-file">cách naive, không phải code Megapot</span>
+<pre><code><span class="r">for (uint256 t = 0; t &lt; tickets.length; t++) {</span>       <span class="c">// 10.000 vé = 10.000 vòng</span>
+    uint8 hits = countHits(tickets[t].normals, winning);  <span class="c">// đọc vé từ storage rồi so</span>
+    bool b = tickets[t].bonus == winningBonus;
+    tierCount[2 * hits + (b ? 1 : 0)]++;
+<span class="r">}</span></code></pre>
+  </div>
+  <p><strong>Nó gãy ở đâu?</strong> Mỗi giao dịch có giới hạn gas. Callback của Pyth còn chặt hơn: nó chạy với một mức gas do contract đặt trước, <code>entropyBaseGasLimit + 250.000 × bonusballMax</code>, khoảng vài triệu gas với 10 bonus. Chỉ riêng việc đọc một ô storage chưa đụng tới đã tốn khoảng 2.100 gas, nên 10.000 vé là hơn 21 triệu gas, vượt xa mức đó. Bán càng nhiều vé thì vòng lặp càng dài, và đến một ngày giao dịch chốt kỳ hết gas giữa chừng. Kỳ quay bị kẹt, không ai nhận được tiền.</p>
+</section>
+
+<figure class="fig wide">
+  <div class="box svgbox">
+    <svg viewBox="0 0 720 300" role="img" aria-label="Biểu đồ khái niệm: gas của vòng lặp từng vé tăng theo số vé và vượt giới hạn, còn cách của Megapot đi ngang">
+      <line class="grid" x1="70" y1="60" x2="690" y2="60"/>
+      <line class="grid" x1="70" y1="140" x2="690" y2="140"/>
+      <line class="grid" x1="70" y1="220" x2="690" y2="220"/>
+      <polyline class="axis" points="70,30 70,250 690,250"/>
+      <text class="sm mut" x="60" y="40" text-anchor="end">gas</text>
+      <text class="sm mut" x="690" y="272" text-anchor="end">số vé đã bán trong kỳ →</text>
+      <line class="s-bad" x1="70" y1="90" x2="690" y2="90" stroke-width="2" stroke-dasharray="7 6"/>
+      <text class="sm t-bad f-bad" x="78" y="82">giới hạn gas của một giao dịch</text>
+      <line class="s-bad" x1="70" y1="246" x2="690" y2="36" stroke-width="3"/>
+      <circle class="f-bad" cx="539" cy="90" r="6"/>
+      <text class="md f-bad" x="548" y="118">kẹt kỳ</text>
+      <text class="md f-bad" x="420" y="196" transform="rotate(-18.7 420 196)">duyệt từng vé</text>
+      <line class="s-hit" x1="70" y1="214" x2="690" y2="214" stroke-width="3"/>
+      <text class="md f-hit" x="430" y="236">Megapot: luôn ~31 × số bonus lần đọc</text>
+    </svg>
+  </div>
+  <figcaption>Hình khái niệm, không vẽ theo số liệu thật. Ý chính: một đường tăng theo số vé, đường kia đi ngang.</figcaption>
+</figure>
+
+<section class="col flow">
+  <p>Megapot giải bài này bằng cách <strong>đổi chỗ chi phí</strong>: phần việc nặng được làm sẵn lúc mua vé, mỗi người mua tự trả gas cho phần của mình trong giao dịch riêng của họ. Đến lúc chốt, chỉ còn một lượng việc cố định. Để làm được vậy cần ba mảnh ghép: vé dạng bitmap, bảng đếm theo nhóm số, và phép bao hàm – loại trừ.</p>
+</section>
+
+<!-- 2 -->
+<section class="col flow">
+  <h2 id="q2">Câu 2: lưu một tấm vé thế nào?</h2>
+  <p><strong>Cách naive</strong> là lưu đúng như người mua gửi lên: mảng <code>uint8[] [3, 9, 11, 13, 28]</code> cộng một số bonus. Muốn biết hai vé có bao nhiêu số chung thì phải so từng cặp, 5 × 5 = 25 phép so sánh, và muốn chặn số trùng trong vé cũng phải lặp lồng nhau.</p>
+  <p><strong>Megapot làm khác:</strong> gói cả vé vào <strong>một số <code>uint256</code></strong>, coi mỗi bit như một ô đánh dấu:</p>
+  <ul>
+    <li>bit 0: bỏ trống (không có số 0)</li>
+    <li><span class="t-num">bit 1 đến 30</span>: số thường, bit n bật nghĩa là chọn số n</li>
+    <li><span class="t-bonus">bit 31 đến 40</span>: bonus, bonus b nằm ở bit 30 + b</li>
+  </ul>
+  <p>Bit n có giá trị 2ⁿ. Khi in ra nhị phân, bit nhỏ nằm bên phải giống hàng đơn vị trong số thập phân, nên đọc chuỗi nhị phân phải đếm từ phải sang trái. Bạn có thể đổi vé ở ô dưới để xem:</p>
+</section>
+
+<figure class="fig wide">
+  <div class="box">
+    <div class="controls">
+      <div class="field" style="flex:1 1 220px"><label for="pk-nums">5 số thường (1 đến 30)</label><input type="text" id="pk-nums" value="28 3 13 9 11"></div>
+      <div class="field"><label for="pk-bonus">Bonus</label><select id="pk-bonus"></select></div>
+    </div>
+    <div class="strips" style="margin-top:16px">
+      <div class="zones"><span class="z0" style="visibility:hidden"></span><span class="zb">bonus (bit 31–40)</span><span class="zn">số thường (bit 1–30)</span><span class="z0">0</span></div>
+      <div id="pk-strip"></div>
+    </div>
+    <div class="err" id="pk-err"></div>
+    <div class="readout">
+      <div><div class="k">hex</div><div class="v" id="pk-hex"></div></div>
+      <div><div class="k">thập phân (giá trị lưu trong NFT vé)</div><div class="v" id="pk-dec"></div></div>
+      <div style="grid-column:1/-1"><div class="k">nhị phân (<code>to_s(2)</code>, bit cao bên trái)</div><div class="v" id="pk-bin"></div></div>
+    </div>
+  </div>
+  <figcaption>Thứ tự nhập không quan trọng: <code>28 3 13 9 11</code> và <code>3 9 11 13 28</code> cho cùng một con số, vì <code>1 &lt;&lt; n</code> luôn đặt số n vào đúng bit n.</figcaption>
+</figure>
+
+<section class="col flow">
+  <h3>Gói vé: OR từng bit</h3>
+  <p>Người mua gửi lên mảng số bình thường (<code>struct Ticket { uint8[] normals; uint8 bonusball; }</code>). Contract tự đổi sang bitmap bằng một vòng lặp ngắn:</p>
+  <div class="codeblock">
+    <span class="label-file">contracts/lib/TicketComboTracker.sol · toNormalsBitVector</span>
+<pre><code>uint256 bitVector = 0;
+for (uint256 i; i &lt; _set.length; ++i) {
+    require(_set[i] &lt;= _maxNormalBall &amp;&amp; _set[i] &gt; 0, <span class="c">"Invalid set selection"</span>);
+    require((bitVector <span class="h">&amp;</span> (1 &lt;&lt; _set[i])) == 0, <span class="c">"Duplicate number in set"</span>);
+    bitVector <span class="n">|=</span> 1 &lt;&lt; _set[i];
+}
+<span class="c">// rồi trong insert(): gắn bonus lên vùng trên số thường</span>
+ticketNumbers = set | 1 &lt;&lt; (<span class="b">_bonusball</span> + 30);</code></pre>
+  </div>
+  <p>Hai phép bit làm hai việc ngược nhau. <span class="t-num">OR <code>|</code> là gộp</span>: thêm bit vào, bit nào đã bật thì giữ nguyên. <span class="t-hit">AND <code>&amp;</code> là lọc</span>: chỉ giữ bit mà cả hai bên cùng có. Dòng <code>require</code> thứ hai dùng AND để kiểm tra số trùng: nếu bit n đã bật sẵn thì kết quả khác 0, giao dịch bị revert.</p>
+  <p>Khi các bit không đè nhau, OR cho kết quả bằng phép cộng (2² | 2⁴ | 2⁵ = 4 + 16 + 32 = 52). Nhưng nếu nhập trùng số, phép cộng sẽ tràn sang bit khác thành một vé sai (4 + 4 = 8, tức là số 3). OR thì không bị vậy, và contract còn chặn trùng trước đó.</p>
+
+  <h2 id="q3">Câu 3: làm sao biết một vé trúng mấy số?</h2>
+  <p><strong>Cách naive</strong> với mảng số là hai vòng lặp lồng nhau:</p>
+  <div class="codeblock">
+    <span class="label-file">cách naive</span>
+<pre><code>for (i = 0; i &lt; 5; i++)
+    for (j = 0; j &lt; 5; j++)
+        if (ticket[i] == winning[j]) hits++;     <span class="c">// 25 lần so</span></code></pre>
+  </div>
+  <p><strong>Với bitmap</strong>, contract làm bằng đúng hai phép tính. AND giữ lại các số mà vé và kết quả cùng có, rồi <code>popCount</code> (thư viện Solady, tốn gas cố định) đếm số bit 1:</p>
+</section>
+
+<figure class="fig wide">
+  <div class="box">
+    <div class="strips"><div id="and-strip"></div></div>
+    <div class="readout">
+      <div><div class="k">popCount(vé &amp; kết quả)</div><div class="v">4 (3 số thường + bonus)</div></div>
+      <div><div class="k">bonus: (vé &gt;&gt; 31) == (kết quả &gt;&gt; 31)</div><div class="v">8 == 8 → trúng bonus</div></div>
+      <div><div class="k">tierId = 2 × (4 − 1) + 1</div><div class="v">7 = "3 số + bonus"</div></div>
+    </div>
+  </div>
+  <figcaption>Vé <code>03 09 11 13 28 + B4</code> so với kết quả <code>03 11 15 20 28 + B4</code>. Số 9 và 13 chỉ có ở vé, 15 và 20 chỉ có ở kết quả, nên AND xóa chúng đi.</figcaption>
+</figure>
+
+<section class="col flow">
+  <div class="codeblock">
+    <span class="label-file">contracts/Jackpot.sol · _calculateTicketTierId</span>
+<pre><code>uint256 matchingBits = _ticketNumbers <span class="h">&amp;</span> _winningNumbers;
+matches = LibBit.popCount(matchingBits);
+uint256 ticketBonusball  = _ticketNumbers  &gt;&gt; (_normalBallMax + 1);   <span class="c">// &gt;&gt; 31: bỏ vùng số thường</span>
+uint256 winningBonusball = _winningNumbers &gt;&gt; (_normalBallMax + 1);
+uint256 bonusballMatch = (ticketBonusball == winningBonusball) ? 1 : 0;
+return 2 * (matches - bonusballMatch) + bonusballMatch;</code></pre>
+  </div>
+  <p>Contract không có câu <code>if (bit &gt; 30)</code> nào để nhận ra bonus. Nghĩa của bit nằm ở <strong>vị trí</strong>: số thường không bao giờ vượt bit 30, nên dịch phải 31 bit là chỉ còn lại phần bonus. Khi cần đọc ngược bonus ra số, <code>unpackTicket</code> lấy vị trí bit cao nhất (<code>LibBit.fls</code>) trừ đi 30.</p>
+  <p>Dòng cuối là một mẹo trải bảng 2 chiều thành mảng 1 chiều. Hạng giải có hai thông tin, trúng k số (0 đến 5) và có bonus hay không, nên được xếp thành 12 ô với <code>index = 2k + bonus</code>:</p>
+</section>
+
+<figure class="fig col">
+  <div class="tablebox">
+    <table>
+      <thead><tr><th>index</th><th class="r">0</th><th class="r">1</th><th class="r">2</th><th class="r">3</th><th class="r">4</th><th class="r">5</th><th class="r">6</th><th class="r">7</th><th class="r">8</th><th class="r">9</th><th class="r">10</th><th class="r">11</th></tr></thead>
+      <tbody>
+        <tr><td>số trúng</td><td class="r mono">0</td><td class="r mono">0</td><td class="r mono">1</td><td class="r mono">1</td><td class="r mono">2</td><td class="r mono">2</td><td class="r mono">3</td><td class="r mono">3</td><td class="r mono">4</td><td class="r mono">4</td><td class="r mono">5</td><td class="r mono">5</td></tr>
+        <tr><td>bonus</td><td class="r">✗</td><td class="r t-bonus">✓</td><td class="r">✗</td><td class="r t-bonus">✓</td><td class="r">✗</td><td class="r t-bonus">✓</td><td class="r">✗</td><td class="r t-bonus">✓</td><td class="r">✗</td><td class="r t-bonus">✓</td><td class="r">✗</td><td class="r t-bonus">✓</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <figcaption>Đọc ngược: k = index / 2, bonus = index % 2. Ô 11 là jackpot. Ô 0 và ô 2 không có thưởng.</figcaption>
+</figure>
+
+<!-- 3 -->
+<section class="col flow">
+  <h2 id="q4">Câu 4: đếm mỗi hạng có bao nhiêu vé mà không duyệt vé?</h2>
+  <p>So một vé thì đã rẻ. Nhưng lúc chốt kỳ vẫn cần biết <strong>tổng số vé ở mỗi hạng</strong>, và Câu 1 đã cho thấy không được lặp qua vé.</p>
+  <p><strong>Thử lần 2, vẫn naive:</strong> lúc mua, đếm sẵn theo vé đầy đủ, kiểu <code>count[vé] += 1</code>. Hạng jackpot thì dễ: đọc đúng một ô <code>count[kết quả]</code>. Nhưng hạng "3 số + bonus" thì sao? Phải liệt kê mọi vé có thể có đúng 3 số trúng rồi đọc từng ô, tức 10 × C(25,2) = 3.000 ô. Cộng mọi hạng có ít nhất một số trúng, ở cả 10 cột bonus, là <strong>893.760 lần đọc</strong>. Không vòng lặp theo vé nữa, nhưng vẫn quá nặng.</p>
+  <p><strong>Ý tưởng của Megapot</strong> (thư viện <code>TicketComboTracker</code>): đừng đếm theo vé đầy đủ, mà đếm theo <strong>mọi tập con</strong> của vé. Mỗi khi bán một vé, tăng bộ đếm cho mọi nhóm số nằm trong vé đó. Khi đó câu hỏi "có bao nhiêu vé chứa cả 3 và 11?" chỉ là đọc một ô.</p>
+  <p>Trong bài, mình gọi chung các bộ đếm này là <strong>bảng đếm</strong>. Đó là một bảng lưu trong storage của contract (mapping <code>comboCounts</code>). Mỗi ô ứng với một nhóm số, ví dụ {3, 11}, và chỉ chứa một con số: đã bán bao nhiêu vé có chứa nhóm số đó.</p>
+  <p>Vé 5 số có 2⁵ − 1 = <strong>31 tập con khác rỗng</strong>. Mỗi tập con cũng là một bitmap, tức một con số, nên dùng thẳng làm khóa của mapping. Đây là 31 ô mà vé ở phần trên sẽ tăng (đổi vé ở trên là danh sách này đổi theo):</p>
+</section>
+
+<figure class="fig wide">
+  <div class="box">
+    <div class="fan" id="fan"></div>
+    <div class="fan-total" id="fan-total"></div>
+  </div>
+  <figcaption>Mỗi ô ghi: tập con, rồi giá trị <code>uint256</code> thật dùng làm khóa (hex). Ví dụ {9, 11} = 2⁹ + 2¹¹ = 2560 = 0xa00.</figcaption>
+</figure>
+
+<section class="col flow">
+  <div class="codeblock">
+    <span class="label-file">contracts/lib/TicketComboTracker.sol</span>
+<pre><code>struct ComboCount { uint128 count; uint128 dupCount; }     <span class="c">// gói vừa 1 slot storage</span>
+struct Tracker {
+    uint8 normalMax;       <span class="c">// 30</span>
+    uint8 bonusballMax;    <span class="c">// thay đổi theo kỳ, ví dụ 10</span>
+    uint8 normalTiers;     <span class="c">// 5</span>
+    mapping(uint8 =&gt; mapping(uint256 =&gt; ComboCount)) comboCounts;  <span class="c">// [bonus][bitmap tập con]</span>
+    mapping(uint8 =&gt; ComboCount) bonusballTicketCounts;            <span class="c">// [bonus] tổng vé</span>
+}
+
+<span class="c">// insert(): chạy cho từng vé lúc mua</span>
+isDup = comboCounts[_bonusball][set].count &gt; 0;              <span class="c">// đủ 5 số + bonus đã có người mua?</span>
+for (uint8 i = 1; i &lt;= 5; i++) {
+    uint256[] memory subsets = Combinations.generateSubsets(set, i);   <span class="c">// C(5, i) tập con</span>
+    for (uint256 j = 0; j &lt; subsets.length; j++)
+        isDup ? comboCounts[_bonusball][subsets[j]].dupCount++
+              : comboCounts[_bonusball][subsets[j]].count++;
+}</code></pre>
+  </div>
+  <p>Ba chi tiết đáng để ý:</p>
+  <ul>
+    <li><strong>Sổ không lưu ai mua vé nào</strong>, chỉ lưu con số đếm. Quyền sở hữu nằm ở NFT vé, một chỗ khác.</li>
+    <li><strong>Bonus là khóa ngoài, không phải một bit trong tập con.</strong> Bonus chỉ có trúng hoặc trượt, không có "trúng một phần", nên tách thành cột riêng. Nếu nhét bit bonus vào tập con thì mỗi vé phải ghi 2⁶ − 1 = 63 ô thay vì 31.</li>
+    <li><strong>Sổ có kích thước hữu hạn.</strong> Mỗi cột bonus có tối đa C(30,1) + C(30,2) + … + C(30,5) = 174.436 ô. Bán thêm vé chỉ làm số đếm trong các ô tăng lên.</li>
+  </ul>
+  <p>Mỗi kỳ có một bảng đếm riêng: <code>mapping(uint256 =&gt; TicketComboTracker.Tracker) drawingEntries</code>. Kết quả quay số thì không nằm trong bảng đếm, mà ở <code>drawingState[kỳ].winningTicket</code>.</p>
+  <h3>Câu hỏi phụ: vé này đã có ai mua chưa?</h3>
+  <p>Ô của tập con đủ 5 số chính là "số vé y hệt vé này". Nên kiểm tra trùng chỉ là đọc một ô: <code>comboCounts[bonus][set].count &gt; 0</code>. Contract còn mở hàm view <code>checkIfTicketsBought(drawingId, tickets)</code> để app hỏi trước khi mua, miễn phí vì là hàm view. Biết điều này có ích vì vé trùng phải chia jackpot (Câu 7).</p>
+</section>
+
+<!-- 4 -->
+<section class="col flow">
+  <h2 id="q5">Câu 5: liệt kê 31 tập con trong Solidity thế nào?</h2>
+  <p><strong>Cách naive</strong> là viết cứng các vòng lặp lồng nhau: 2 vòng cho tập 2 số, 3 vòng cho tập 3 số, và cứ thế. Code dài, mỗi cỡ một đoạn riêng. Còn đệ quy thì tốn gas cho mỗi lần gọi hàm và dễ chạm giới hạn độ sâu stack của EVM.</p>
+  <p><strong>Megapot dùng một hàm chung</strong> <code>generateSubsets(set, k)</code> cho mọi k, không đệ quy, bằng cách tách việc thành hai tầng.</p>
+  <ol>
+    <li><strong>Chọn vị trí</strong> bằng một số nhỏ 5 bit tên <code>comb</code>. Bit j bật nghĩa là "lấy số thứ j của vé". Các cách chọn đúng k số chính là các số 5 bit có đúng k bit 1.</li>
+    <li><strong>Dịch vị trí sang số thật</strong>: đi qua các bit của vé, mỗi khi gặp một số của vé thì đọc một bit của <code>comb</code> để quyết định lấy hay bỏ.</li>
+  </ol>
+  <p>Điểm bắt đầu là <code>(1 &lt;&lt; k) − 1</code>, tức k bit 1 ở cuối (số nhỏ nhất có k bit 1). Điểm dừng là <code>1 &lt;&lt; 5 = 32</code>, vì vượt 5 bit là đã chọn tới "số thứ 6" mà vé không có. Bước nhảy là <strong>Gosper's hack</strong>: ba phép tính bit để đi thẳng tới số lớn hơn kế tiếp có cùng số bit 1, bỏ qua mọi số không hợp lệ ở giữa.</p>
+  <div class="codeblock">
+    <span class="label-file">contracts/lib/Combinations.sol · generateSubsets</span>
+<pre><code>uint256 bound = 1 &lt;&lt; n;             <span class="c">// n = popCount(set) = 5 → 32</span>
+uint256 comb = (1 &lt;&lt; k) - 1;        <span class="c">// k = 2 → 0b00011</span>
+while (comb &lt; bound) {
+    <span class="c">// tầng 2: comb (vị trí) → mapped (bitmap số thật)</span>
+    for (uint256 i; i &lt; 256 &amp;&amp; _set != 0; ++i) {
+        if (_set &amp; 1 == 1) {                      <span class="c">// bit i là một số của vé</span>
+            if (_comb &amp; 1 == 1) mapped |= (1 &lt;&lt; i);
+            _comb &gt;&gt;= 1;                           <span class="c">// sang vị trí kế</span>
+        }
+        _set &gt;&gt;= 1;
+    }
+    subsets[count++] = mapped;
+    <span class="c">// tầng 1: Gosper's hack</span>
+    uint256 c = comb &amp; uint256(-int256(comb));   <span class="c">// bit 1 thấp nhất</span>
+    uint256 r = comb + c;                        <span class="c">// đẩy khối 1 thấp nhất lên</span>
+    comb = (((r ^ comb) &gt;&gt; 2) / c) | r;          <span class="c">// trả các bit 1 còn dư về đáy</span>
+}</code></pre>
+  </div>
+</section>
+
+<figure class="fig col">
+  <div class="tablebox">
+    <table>
+      <thead><tr><th class="mono">comb</th><th class="mono">c</th><th class="mono">r</th><th class="mono">r ^ comb</th><th class="mono">&gt;&gt; 2, / c</th><th class="mono">comb mới</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">00011</td><td class="mono">00001</td><td class="mono">00100</td><td class="mono">00111</td><td class="mono">00001</td><td class="mono">00101</td></tr>
+        <tr><td class="mono">00110</td><td class="mono">00010</td><td class="mono">01000</td><td class="mono">01110</td><td class="mono">00001</td><td class="mono">01001</td></tr>
+        <tr><td class="mono">01100</td><td class="mono">00100</td><td class="mono">10000</td><td class="mono">11100</td><td class="mono">00001</td><td class="mono">10001</td></tr>
+        <tr><td class="mono">11000</td><td class="mono">01000</td><td class="mono">100000</td><td class="mono">111000</td><td class="mono">00001</td><td class="mono t-bad">100001 ≥ 32, dừng</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <figcaption>Vài bước Gosper's hack với k = 2 (đã chạy kiểm chứng). Với vé <code>03 09 11 13 28</code>, <code>comb = 01001</code> bật vị trí 0 và 3, nên ra tập con {3, 13}.</figcaption>
+</figure>
+
+<section class="col flow">
+  <p>Có một chỗ đáng lưu ý: <code>comb</code> <strong>không được lưu ở đâu cả</strong>. Nó chỉ là biến đếm tạm. Mảng <code>subsets</code> cũng nằm trong <code>memory</code> và mất khi giao dịch kết thúc. Thứ duy nhất được ghi lên chain là các ô <code>comboCounts[bonus][mapped]</code>.</p>
+</section>
+
+<!-- 5 -->
+<section class="col flow">
+  <h2 id="q6">Câu 6: đọc bảng đếm xong, sao con số lại sai?</h2>
+  <p>Khi có kết quả, contract lấy 31 tập con của <strong>bộ số trúng</strong>, đọc các ô tương ứng trong bảng đếm ở mọi cột bonus. Cột trùng bonus trúng được cộng vào các hạng "có bonus", các cột còn lại cộng vào hạng "không bonus". Với 10 bonus là 31 × 10 = 310 lần đọc.</p>
+  <p>Nhưng tổng đọc được bị <strong>đếm lặp</strong>. Một vé trúng 3 số, ví dụ {3, 11, 15}, chứa 3 cặp số của kết quả là {3,11}, {3,15}, {11,15}. Vì vậy khi cộng theo từng cặp, vé đó bị tính 3 lần ở hàng "2 số". Tổng quát: một vé trúng m số bị đếm <strong>C(m, k)</strong> lần ở hàng k số.</p>
+  <p>Cách gỡ là đi <strong>từ trên xuống</strong>. Hàng 5 số không bị lẫn gì nên đọc là ra. Hàng 4 số trừ đi phần vé 5 số đã bị đếm lẫn. Hàng 3 số trừ phần của vé 4 và 5 số, và cứ thế:</p>
+  <div class="codeblock">
+    <span class="label-file">contracts/lib/TicketComboTracker.sol · _applyInclusionExclusionPrinciple</span>
+<pre><code>for (uint256 k = 5; k &gt;= 1; --k) {                <span class="c">// từ hạng 5 số xuống</span>
+    uint256 s  = _matches[2*k];                   <span class="c">// tổng đọc từ bảng đếm, không bonus</span>
+    uint256 sp = _matches[2*k+1];                 <span class="c">// có bonus</span>
+    for (uint256 m = k + 1; m &lt;= 5; ++m) {
+        uint256 c = Combinations.choose(m, k);    <span class="c">// vé trúng m số chứa C(m,k) nhóm k số</span>
+        s  -= c * result[2*m];                    <span class="c">// result[2m] đã tính ở vòng trước</span>
+        sp -= c * result[2*m+1];
+    }
+    result[2*k] = s;  result[2*k+1] = sp;         <span class="c">// điền ngay để hàng dưới dùng</span>
+}</code></pre>
+  </div>
+  <p>Hạng "chỉ trúng bonus" không có tập con 0 số nên tính riêng: lấy tổng vé có đúng bonus (<code>bonusballTicketCounts</code>), trừ đi các vé có bonus đã trúng thêm số thường.</p>
+</section>
+
+<div class="lab wide">
+  <div class="flow">
+    <h3>Phòng thí nghiệm: tự chốt một kỳ</h3>
+    <p class="small muted">Mỗi dòng là một vé: 5 số thường rồi bonus. Trang sẽ ghi bảng đếm y như contract, chốt kỳ bằng bao hàm – loại trừ, rồi so với cách đếm trực tiếp từng vé để kiểm tra.</p>
+  </div>
+  <div class="lab-grid">
+    <div class="flow">
+      <div class="controls">
+        <div class="field" style="flex:1 1 180px"><label for="lab-win">Kết quả (5 số)</label><input type="text" id="lab-win" value="03 11 15 20 28"></div>
+        <div class="field"><label for="lab-wb">Bonus</label><select id="lab-wb"></select></div>
+      </div>
+      <div class="field"><label for="lab-tix">Vé đã bán (mỗi dòng: 5 số + bonus)</label>
+<textarea id="lab-tix" rows="9">03 11 15 20 28 4
+03 11 15 20 09 4
+03 11 15 09 10 7
+11 20 09 10 12 4
+03 28 01 02 04 2
+15 01 02 04 05 4
+01 02 04 05 06 4</textarea></div>
+      <div class="err" id="lab-err"></div>
+    </div>
+    <div style="min-width:0">
+      <div class="tablebox">
+        <table id="lab-table">
+          <thead><tr><th>hạng</th><th class="r">tổng đọc từ bảng</th><th>trừ phần đếm lặp</th><th class="r">kết quả</th><th class="r">đếm trực tiếp</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="lab-stats">
+        <div><div class="k">ô đã ghi lúc mua</div><div class="v" id="lab-writes"></div></div>
+        <div><div class="k">ô đọc lúc chốt</div><div class="v" id="lab-reads"></div></div>
+        <div><div class="k">khớp với đếm trực tiếp</div><div class="v" id="lab-check"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section class="col flow">
+  <p>Thử thêm vài nghìn dòng vé vào ô trên: số ô đọc lúc chốt vẫn là 310. Đó là toàn bộ ý nghĩa của thiết kế.</p>
+</section>
+
+<!-- 6 -->
+<section class="col flow">
+  <h2 id="q7">Câu 7: chia tiền thế nào khi không biết ai trúng?</h2>
+  <p>Biết số vé mỗi hạng rồi, giờ phải biết mỗi vé được bao nhiêu tiền và trả cho ai.</p>
+  <p><strong>Cách naive</strong> là kiểu chia đều truyền thống: lấy phần tiền của hạng, chia cho số người trúng thật, rồi lặp qua danh sách người trúng để chuyển tiền. Cách này gặp ba vấn đề:</p>
+  <ul>
+    <li>Lại cần danh sách người trúng và một vòng lặp chuyển tiền, đúng thứ Câu 1 đã loại.</li>
+    <li>Chỉ cần một người nhận từ chối nhận tiền (ví dụ một contract cố tình revert) là cả giao dịch chốt kỳ hỏng.</li>
+    <li>Giải mỗi người thay đổi theo số người cùng trúng, nên không ai biết trước giải đáng bao nhiêu.</li>
+  </ul>
+  <p><strong>Megapot làm khác ở hai điểm.</strong> Thứ nhất, lúc chốt chỉ tính và lưu mức thưởng mỗi hạng, người chơi tự đến claim sau (Câu 3), không có vòng lặp chuyển tiền. Thứ hai, và thú vị hơn, nằm ở mẫu số: <code>GuaranteedMinimumPayoutCalculator</code> <strong>không</strong> chia cho số người thật sự trúng. Nó chia cho <strong>tổng số tổ hợp có thể trúng hạng đó</strong>, dù có ai mua hay không, cộng thêm số vé mua trùng:</p>
+  <div class="codeblock">
+    <span class="label-file">contracts/GuaranteedMinimumPayoutCalculator.sol</span>
+<pre><code>tierWinners[i] = _calculateTierTotalWinningCombos(k, 30, bonusballMax, coBonus) + _dupResult[i];
+<span class="c">// có bonus:    C(5,k) × C(25, 5−k)</span>
+<span class="c">// không bonus: C(5,k) × C(25, 5−k) × (bonusballMax − 1)</span>
+
+premium    = remainingPool × weight[i] / tierWinners[i];
+tierPayout = (minPayoutTiers[i] ? minPayout : 0) + premium;
+totalPayout += tierPayout × (uniqueResult[i] + dupResult[i]);   <span class="c">// chỉ trả cho vé đã bán</span></code></pre>
+  </div>
+</section>
+
+<figure class="fig col">
+  <div class="tablebox">
+    <table>
+      <thead><tr><th>hạng</th><th class="r">tổ hợp có thể trúng (10 bonus)</th></tr></thead>
+      <tbody>
+        <tr class="hl"><td>5 số + bonus (jackpot)</td><td class="r mono">1</td></tr>
+        <tr><td>5 số</td><td class="r mono">9</td></tr>
+        <tr><td>4 số + bonus</td><td class="r mono">125</td></tr>
+        <tr><td>4 số</td><td class="r mono">1.125</td></tr>
+        <tr><td>3 số + bonus</td><td class="r mono">3.000</td></tr>
+        <tr><td>3 số</td><td class="r mono">27.000</td></tr>
+        <tr><td>2 số + bonus</td><td class="r mono">23.000</td></tr>
+        <tr><td>1 số + bonus</td><td class="r mono">63.250</td></tr>
+        <tr><td>chỉ bonus</td><td class="r mono">53.130</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <figcaption>Tổng mọi tổ hợp của một kỳ 10 bonus là 142.506 × 10 = 1.425.060.</figcaption>
+</figure>
+
+<section class="col flow">
+  <p>Phần tiền ứng với tổ hợp không ai mua thì không trả cho ai, mà ở lại trong pool của LP. Từ một dòng mẫu số này kéo theo hai hệ quả quan trọng cho người chơi:</p>
+  <ul>
+    <li><strong>Giải của bạn không giảm khi nhiều người khác cùng trúng hạng đó.</strong> Có 1 hay 500 người trúng "3 số + bonus" thì mỗi người vẫn nhận cùng một số tiền.</li>
+    <li><strong>Chỉ bị chia khi có người mua y hệt vé của bạn</strong> (<code>dupCount</code>). Điều này gần như chỉ có ý nghĩa ở jackpot. Vì vậy chọn số nào cũng không làm các hạng nhỏ đáng giá hơn.</li>
+  </ul>
+  <div class="note">
+    <strong>Ví dụ với tham số giả định.</strong> Mức tối thiểu và trọng số từng hạng do owner đặt, không có trong code. Giả sử pool $1.000.000, mức tối thiểu $1 cho mọi hạng có thưởng, trọng số ước lượng từ dữ liệu API trước đây (3 số + bonus 4%, jackpot 33%), chưa đối chiếu trên chain. Tiền dành cho mức tối thiểu là 377.640 tổ hợp × $1, còn lại $622.360. Mỗi vé "3 số + bonus" nhận khoảng $1 + 622.360 × 4% / 3.000 ≈ <strong>$9,30</strong>. Jackpot nhận khoảng $1 + 622.360 × 33% ≈ <strong>$205.381</strong>, và nếu có 2 người mua cùng vé jackpot thì mỗi người nhận khoảng một nửa.
+  </div>
+  <p>Lưu ý là ở bước chốt kỳ, contract mới chỉ tính và lưu <code>tierPayouts[kỳ][hạng]</code>. Nó chưa chuyển tiền cho ai. Người chơi tự claim NFT vé sau đó, lúc ấy contract mới so riêng vé bằng AND + popCount như ở phần đầu, trả tiền và burn NFT để không claim được hai lần.</p>
+</section>
+
+<!-- 8 -->
+<section class="col flow">
+  <h2 id="q8">Câu 8: cái giá phải trả là gì?</h2>
+  <p>Không có gì miễn phí. Thiết kế này đẩy chi phí sang chỗ khác, và có vài điểm yếu cần biết:</p>
+  <ul>
+    <li><span class="t-bad">Mua vé đắt gas hơn.</span> Mỗi vé tốn khoảng 31 lần ghi storage, chưa kể mint NFT. Ghi vào ô mới tinh tốn khoảng 20 nghìn gas, ô đã có số tốn khoảng 5 nghìn gas. Trên Base thì vẫn rẻ, nhưng mua nhiều vé trong một giao dịch là đáng kể.</li>
+    <li><span class="t-bad">Chi phí chốt tăng theo số cột bonus.</span> Số lần đọc là 31 × <code>bonusballMax</code>, mà <code>bonusballMax</code> tăng khi pool lớn. Đây là gốc của lỗi H-02 trong audit: nếu <code>bonusballMax</code> lên quá cao thì callback hết gas và kỳ bị kẹt, đúng loại lỗi mà thiết kế muốn tránh.</li>
+    <li><span class="t-bad">Một chút lãng phí trong code.</span> Lúc chốt, <code>generateSubsets</code> được gọi lại bên trong vòng lặp bonus, nên 31 tập con bị tính lại 10 lần. Phần này chỉ tốn tính toán trong memory, rẻ hơn nhiều so với đọc storage, nhưng có thể đưa ra ngoài vòng lặp.</li>
+  </ul>
+</section>
+
+<!-- recap -->
+<section class="col flow">
+  <h2>Nhìn lại: bài toán, cách naive, cách Megapot</h2>
+</section>
+<figure class="fig wide">
+  <div class="tablebox">
+    <table>
+      <thead><tr><th>bài toán</th><th>cách naive</th><th>gãy ở đâu</th><th>Megapot làm gì</th></tr></thead>
+      <tbody>
+        <tr><td>Chốt kỳ trong một giao dịch</td><td>Lặp qua mọi vé</td><td>Gas tăng theo số vé, có ngày hết gas</td><td>Làm sẵn lúc mua, lúc chốt chỉ đọc 31 × số bonus ô</td></tr>
+        <tr><td>Lưu vé</td><td>Mảng <code>uint8[]</code></td><td>So vé, chặn số trùng đều cần lặp lồng nhau</td><td>Một <code>uint256</code> bitmap</td></tr>
+        <tr><td>Vé trúng mấy số</td><td>So 5 × 5 = 25 lần</td><td>Tốn và rườm rà</td><td><code>popCount(vé &amp; kq)</code>, bonus bằng <code>&gt;&gt; 31</code></td></tr>
+        <tr><td>Đếm vé mỗi hạng</td><td>Đếm theo vé đầy đủ</td><td>893.760 lần đọc để ra mọi hạng</td><td>Đếm theo 31 tập con, cột riêng theo bonus</td></tr>
+        <tr><td>Liệt kê tập con</td><td>Vòng lồng viết cứng, hoặc đệ quy</td><td>Dài, tốn gas gọi hàm</td><td><code>comb</code> 5 bit + Gosper's hack</td></tr>
+        <tr><td>Tổng đọc từ bảng đếm bị lặp</td><td>Lấy luôn tổng</td><td>Vé trúng m số bị đếm C(m,k) lần</td><td>Bao hàm – loại trừ từ hạng 5 xuống</td></tr>
+        <tr><td>Chia tiền</td><td>Chia cho số người trúng, chuyển tiền cho từng người</td><td>Lại lặp, một người revert là hỏng, giải không đoán trước</td><td>Mẫu số là mọi tổ hợp có thể, người chơi tự claim</td></tr>
+      </tbody>
+    </table>
+  </div>
+</figure>
+
+<!-- 9 -->
+<section class="col flow">
+  <h2>Mang về dùng được gì</h2>
+  <p>Bỏ chuyện xổ số sang một bên, đây là những mẫu thiết kế áp dụng được cho contract khác:</p>
+  <div class="lesson"><b>Làm sẵn lúc ghi để việc đọc có trần</b>Nếu có một bước bắt buộc phải chạy trong một giao dịch (chốt kỳ, thanh lý, phân phối), hãy chuyển chi phí phụ thuộc số lượng sang các giao dịch nhỏ của người dùng. Bước bắt buộc chỉ còn chi phí cố định.</div>
+  <div class="lesson"><b>Bitmap làm tập hợp và làm khóa</b>Một <code>uint256</code> chứa được tập hợp tới 256 phần tử. Giao, hợp, kiểm tra phần tử đều là một phép bit, và mỗi tập ra đúng một con số nên dùng làm khóa mapping được luôn.</div>
+  <div class="lesson"><b>Đếm thay vì lưu danh tính</b>Sổ chỉ giữ con số đếm, không giữ danh sách ai mua gì. Danh tính để ở chỗ khác (NFT) và chỉ được đụng tới khi chính chủ đến lấy.</div>
+  <div class="lesson"><b>Kéo tiền thay vì đẩy tiền</b>Lúc chốt chỉ tính mức thưởng mỗi hạng. Người chơi tự claim, nên không bao giờ có vòng lặp chuyển tiền cho hàng nghìn ví.</div>
+  <div class="lesson"><b>Mẫu số không phụ thuộc người chơi</b>Chia theo mọi tổ hợp có thể giúp giá trị mỗi hạng ổn định và khó bị thao túng: không ai làm loãng giải của người khác bằng cách mua dồn vào một hạng.</div>
+</section>
+
+<hr class="col">
+<section class="col flow">
+  <h2 style="margin-top:1.4em !important;font-size:1.2rem">Nguồn</h2>
+  <ul class="sources">
+    <li>Repo audit: <a href="https://github.com/code-423n4/2025-11-megapot" target="_blank" rel="noopener">code-423n4/2025-11-megapot</a>, các file <code>contracts/lib/TicketComboTracker.sol</code>, <code>contracts/lib/Combinations.sol</code>, <code>contracts/Jackpot.sol</code>, <code>contracts/GuaranteedMinimumPayoutCalculator.sol</code>.</li>
+    <li>Bài trước trong loạt này: Máy quay số Megapot (cách Pyth Entropy tạo số ngẫu nhiên).</li>
+  </ul>
+  <p class="small muted">Bài viết phân tích kỹ thuật, không phải lời khuyên chơi xổ số hay đầu tư.</p>
+</section>
+
+</article>
+</div>
+
+<script>
+(function(){
+  var NORMAL_MAX = 30, BONUS_MAX = 10;
+
+  function parseNums(str){
+    return str.trim().split(/[\s,;]+/).filter(Boolean).map(function(x){ return Number(x); });
+  }
+  function choose(n,k){ if(k<0||k>n) return 0; var r=1; for(var d=1; d<=k; d++){ r = r*(n-d+1)/d; } return Math.round(r); }
+  function pad2(n){ return (n<10?'0':'')+n; }
+
+  // Contract-style validation and packing
+  function packTicket(nums, bonus){
+    if(nums.length !== 5) return {err:'Cần đúng 5 số thường ("Invalid pick length").'};
+    var seen = {};
+    for(var i=0;i<nums.length;i++){
+      var n = nums[i];
+      if(!Number.isInteger(n) || n < 1 || n > NORMAL_MAX) return {err:'Số '+nums[i]+' nằm ngoài 1..30 → revert "Invalid set selection".'};
+      if(seen[n]) return {err:'Số '+n+' bị nhập trùng: bitVector & (1 << '+n+') ≠ 0 → revert "Duplicate number in set".'};
+      seen[n] = true;
+    }
+    var set = 0n;
+    nums.forEach(function(n){ set |= (1n << BigInt(n)); });
+    var packed = set | (1n << BigInt(bonus + NORMAL_MAX));
+    return {set:set, packed:packed};
+  }
+
+  function bitsOf(x){ var out=[]; for(var b=0;b<=40;b++){ if((x >> BigInt(b)) & 1n) out.push(b); } return out; }
+
+  function stripRow(label, x, kind){
+    var row = document.createElement('div'); row.className = 'strip';
+    var l = document.createElement('div'); l.className = 'lbl'; l.innerHTML = label; row.appendChild(l);
+    for(var b=40;b>=0;b--){
+      var c = document.createElement('div'); c.className = 'cell';
+      var on = ((x >> BigInt(b)) & 1n) === 1n;
+      if(b === 0) c.classList.add('zero');
+      if(on){
+        c.classList.add('on');
+        if(kind === 'hit') c.classList.add('hz');
+        else if(b > NORMAL_MAX) c.classList.add('bz');
+      }
+      c.textContent = on ? '1' : '0';
+      c.title = 'bit ' + b + (b===0 ? ' (bỏ trống)' : b > NORMAL_MAX ? ' = bonus ' + (b-NORMAL_MAX) : ' = số ' + b);
+      row.appendChild(c);
+    }
+    return row;
+  }
+  function idxRow(){
+    var row = document.createElement('div'); row.className = 'idx';
+    var s = document.createElement('span'); s.textContent = 'bit'; row.appendChild(s);
+    for(var b=40;b>=0;b--){ var t=document.createElement('span'); t.textContent=b; row.appendChild(t); }
+    return row;
+  }
+
+  function fillBonusSelect(el, val){
+    for(var b=1;b<=BONUS_MAX;b++){ var o=document.createElement('option'); o.value=b; o.textContent=b; if(b===val) o.selected=true; el.appendChild(o); }
+  }
+
+  // Port of Combinations.generateSubsets (comb/Gosper on small ints, mapped as BigInt)
+  function generateSubsets(set, k){
+    var n = bitsOf(set).length, bound = 1 << n, comb = (1 << k) - 1, out = [];
+    while(comb < bound){
+      var mapped = 0n, s = set, c = comb, i = 0;
+      while(s !== 0n){
+        if((s & 1n) === 1n){ if((c & 1) === 1) mapped |= (1n << BigInt(i)); c >>= 1; }
+        s >>= 1n; i++;
+      }
+      out.push(mapped);
+      var low = comb & -comb, r = comb + low;
+      comb = (((r ^ comb) >> 2) / low) | r;
+    }
+    return out;
+  }
+
+  // ---- Packing widget + subset fan ----
+  var pkNums = document.getElementById('pk-nums'), pkBonus = document.getElementById('pk-bonus');
+  fillBonusSelect(pkBonus, 4);
+  function renderPack(){
+    var nums = parseNums(pkNums.value), bonus = Number(pkBonus.value);
+    var res = packTicket(nums, bonus);
+    var strip = document.getElementById('pk-strip'); strip.innerHTML = '';
+    var err = document.getElementById('pk-err');
+    if(res.err){
+      err.textContent = res.err;
+      strip.appendChild(stripRow('<b>vé</b>', 0n)); strip.appendChild(idxRow());
+      ['pk-hex','pk-dec','pk-bin'].forEach(function(id){ document.getElementById(id).textContent = '—'; });
+      document.getElementById('fan').innerHTML = ''; document.getElementById('fan-total').textContent = 'Nhập một vé hợp lệ để xem 31 tập con.';
+      return;
+    }
+    err.textContent = '';
+    strip.appendChild(stripRow('<b>vé</b>', res.packed)); strip.appendChild(idxRow());
+    document.getElementById('pk-hex').textContent = '0x' + res.packed.toString(16);
+    document.getElementById('pk-dec').textContent = res.packed.toString(10);
+    document.getElementById('pk-bin').textContent = res.packed.toString(2);
+    renderFan(res.set, bonus);
+  }
+  function renderFan(set, bonus){
+    var fan = document.getElementById('fan'); fan.innerHTML = '';
+    var total = 0;
+    for(var k=1;k<=5;k++){
+      var subs = generateSubsets(set, k); total += subs.length;
+      var row = document.createElement('div'); row.className = 'fanrow';
+      var lab = document.createElement('div'); lab.className = 'k'; lab.textContent = k + ' số · ' + subs.length; row.appendChild(lab);
+      var chips = document.createElement('div'); chips.className = 'chips';
+      subs.forEach(function(m){
+        var ch = document.createElement('span'); ch.className = 'chip';
+        ch.innerHTML = '{' + bitsOf(m).join(', ') + '}<i>0x' + m.toString(16) + '</i>';
+        chips.appendChild(ch);
+      });
+      row.appendChild(chips); fan.appendChild(row);
+    }
+    document.getElementById('fan-total').innerHTML = 'Tổng <strong>' + total + '</strong> ô, tất cả nằm trong cột <code>comboCounts[' + bonus + '][…]</code>.';
+  }
+  pkNums.addEventListener('input', renderPack); pkBonus.addEventListener('change', renderPack);
+  renderPack();
+
+  // ---- AND figure (static example) ----
+  (function(){
+    var t = packTicket([3,9,11,13,28], 4).packed, w = packTicket([3,11,15,20,28], 4).packed;
+    var el = document.getElementById('and-strip');
+    el.appendChild(stripRow('<b>vé</b>', t));
+    el.appendChild(stripRow('<b>kết quả</b>', w));
+    el.appendChild(stripRow('<b>vé &amp; kq</b>', t & w, 'hit'));
+    el.appendChild(idxRow());
+  })();
+
+  // ---- Lab ----
+  var labWin = document.getElementById('lab-win'), labWb = document.getElementById('lab-wb'), labTix = document.getElementById('lab-tix');
+  fillBonusSelect(labWb, 4);
+  var TIER_NAMES = {11:'5 số + bonus',10:'5 số',9:'4 số + bonus',8:'4 số',7:'3 số + bonus',6:'3 số',5:'2 số + bonus',4:'2 số',3:'1 số + bonus',2:'1 số',1:'chỉ bonus'};
+
+  function renderLab(){
+    var err = document.getElementById('lab-err'); err.textContent = '';
+    var tbody = document.querySelector('#lab-table tbody'); tbody.innerHTML = '';
+    var winB = Number(labWb.value);
+    var win = packTicket(parseNums(labWin.value), winB);
+    if(win.err){ err.textContent = 'Kết quả: ' + win.err; return; }
+
+    // Buy phase: write the ledger exactly like insert()
+    var counts = new Map(), bonusTotals = {}, tickets = [], writes = 0, lines = labTix.value.split('\n');
+    for(var li=0; li<lines.length; li++){
+      var line = lines[li].trim(); if(!line) continue;
+      var parts = parseNums(line);
+      if(parts.length !== 6){ err.textContent = 'Dòng ' + (li+1) + ': cần 5 số + 1 bonus.'; return; }
+      var b = parts[5];
+      if(!Number.isInteger(b) || b < 1 || b > BONUS_MAX){ err.textContent = 'Dòng ' + (li+1) + ': bonus phải từ 1 đến 10.'; return; }
+      var p = packTicket(parts.slice(0,5), b);
+      if(p.err){ err.textContent = 'Dòng ' + (li+1) + ': ' + p.err; return; }
+      tickets.push({set:p.set, bonus:b});
+      bonusTotals[b] = (bonusTotals[b] || 0) + 1;
+      for(var k=1;k<=5;k++){
+        generateSubsets(p.set, k).forEach(function(m){
+          var key = b + ':' + m.toString(16);
+          counts.set(key, (counts.get(key) || 0) + 1); writes++;
+        });
+      }
+    }
+
+    // Settle phase: _countSubsetMatches
+    var matches = new Array(12).fill(0), reads = 0, winSubs = [];
+    for(var k2=1;k2<=5;k2++) winSubs[k2] = generateSubsets(win.set, k2);
+    for(var i=1;i<=BONUS_MAX;i++){
+      for(var k3=1;k3<=5;k3++){
+        winSubs[k3].forEach(function(m){
+          var v = counts.get(i + ':' + m.toString(16)) || 0; reads++;
+          if(i === winB) matches[k3*2+1] += v; else matches[k3*2] += v;
+        });
+      }
+    }
+    // _applyInclusionExclusionPrinciple
+    var result = new Array(12).fill(0), expr = {};
+    for(var kk=5; kk>=1; kk--){
+      [0,1].forEach(function(bb){
+        var idx = 2*kk+bb, s = matches[idx], parts = [String(matches[idx])];
+        for(var m=kk+1;m<=5;m++){
+          var c = choose(m,kk), sub = result[2*m+bb];
+          s -= c * sub;
+          if(sub) parts.push(c + '×' + sub);
+        }
+        result[idx] = s;
+        expr[idx] = parts.length > 1 ? parts[0] + ' − ' + parts.slice(1).join(' − ') : '';
+      });
+    }
+    // _calculateBonusballOnlyMatches
+    var bt = bonusTotals[winB] || 0, bonusOnly = bt, bparts = [];
+    for(var q=1;q<=5;q++){ bonusOnly -= result[2*q+1]; if(result[2*q+1]) bparts.push(String(result[2*q+1])); }
+    result[1] = bonusOnly; matches[1] = bt; expr[1] = bparts.length ? bt + ' − ' + bparts.join(' − ') : '';
+
+    // Direct count for checking
+    var direct = new Array(12).fill(0);
+    tickets.forEach(function(t){
+      var hits = bitsOf(t.set & win.set).length, bh = t.bonus === winB ? 1 : 0;
+      direct[2*hits + bh]++;
+    });
+
+    var allOk = true;
+    [11,10,9,8,7,6,5,4,3,2,1].forEach(function(idx){
+      var tr = document.createElement('tr');
+      if(result[idx] > 0) tr.className = 'hl';
+      var ok = result[idx] === direct[idx]; if(!ok) allOk = false;
+      tr.innerHTML = '<td>' + TIER_NAMES[idx] + '</td>' +
+        '<td class="r mono">' + matches[idx] + '</td>' +
+        '<td class="mono">' + (expr[idx] || '<span class="muted">không bị lẫn</span>') + '</td>' +
+        '<td class="r mono"><strong>' + result[idx] + '</strong></td>' +
+        '<td class="r mono">' + direct[idx] + ' <span class="' + (ok?'ok':'fail') + '">' + (ok?'✓':'✗') + '</span></td>';
+      tbody.appendChild(tr);
+    });
+    document.getElementById('lab-writes').textContent = writes.toLocaleString('vi-VN') + ' (' + tickets.length + ' vé × 31)';
+    document.getElementById('lab-reads').textContent = reads.toLocaleString('vi-VN');
+    var chk = document.getElementById('lab-check');
+    chk.textContent = allOk ? 'Khớp hết' : 'Lệch'; chk.className = 'v ' + (allOk ? 'ok' : 'fail');
+  }
+  [labWin, labTix].forEach(function(el){ el.addEventListener('input', renderLab); });
+  labWb.addEventListener('change', renderLab);
+  renderLab();
+})();
+</script>
+
+</body>
+</html>
