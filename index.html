@@ -1,52 +1,40 @@
 ---
 layout: default
 ---
+<section class="intro col">
+  <p class="eyebrow">Blog của {{ site.author }} · {{ site.nickname }}</p>
+  <h1 class="intro-title">{{ site.title }}</h1>
+  <p class="intro-lead">{{ site.description }}</p>
+</section>
 
-<div id="home">
-    <h1>Stack Problems</h1>
-    <hr />
-    <ol class="posts">
-    {% for post in paginator.posts %}
-      <li><a href="{{ post.url }}">{{ post.title }}</a> &raquo; <i><span>{{ post.date | date_to_string }}</span></i></li>
-    {% endfor %}
-    </ol>
+{% assign latest = site.posts.first %}
+{% if latest %}
+<section class="col" aria-label="Bài mới nhất">
+  <a class="feature" href="{{ latest.url | relative_url }}">
+    <p class="eyebrow">Mới nhất{% if latest.interactive %} · <span class="tag-live">có minh họa tương tác</span>{% endif %}</p>
+    <h2>{{ latest.title }}</h2>
+    {% capture latest_desc %}{% if latest.description %}{{ latest.description }}{% else %}{{ latest.excerpt }}{% endif %}{% endcapture %}
+    <p class="feature-desc">{{ latest_desc | strip_html | normalize_whitespace | truncatewords: 45 }}</p>
+    <p class="meta"><time datetime="{{ latest.date | date_to_xmlschema }}">{{ latest.date | date: '%d/%m/%Y' }}</time>{% if latest.categories.size > 0 %} · {{ latest.categories | join: ' · ' }}{% endif %}</p>
+  </a>
+</section>
+{% endif %}
 
-    <!-- Pagination links -->
-    {% if paginator.total_pages > 1 %}
-    <ul class="pagination pagination-sm">
-      {% if paginator.previous_page %}
-        <li>
-          <a href="{{ paginator.previous_page_path | prepend: site.baseurl | replace: '//', '/' }}">&laquo;</a>
-        </li>
-      {% else %}
-        <li class="disabled"><span aria-hidden="true">&laquo;</span></li>
-      {% endif %}
-
-      <li><a href="/">First</a></li>
-
-      {% for page in (1..paginator.total_pages) %}
-        {% if page == paginator.page %}
-          <li class="active">
-             <a>{{ page }}<span class="sr-only">(current)</span></a>
-          </li>
-        {% elsif page == 1 %}
-          <li><a href="/">{{ page }}</a></li>
-        {% else %}
-          <li>
-            <a href="{{ site.paginate_path | prepend: site.baseurl | replace: '//', '/' | replace: ':num', page }}">{{ page }}</a>
-          </li>
-        {% endif %}
+<section class="archive col" aria-labelledby="archive-title">
+  <h2 id="archive-title" class="section-label">Tất cả bài viết</h2>
+  {% assign years = site.posts | group_by_exp: "p", "p.date | date: '%Y'" %}
+  {% for year in years %}
+  <div class="year">
+    <h3 class="year-label">{{ year.name }}</h3>
+    <ul class="post-list">
+      {% for post in year.items %}
+      <li>
+        <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: '%d/%m' }}</time>
+        <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
+        <span class="row-tags">{% if post.interactive %}<span class="tag-live">tương tác</span>{% endif %}{% for c in post.categories limit: 3 %}<span>{{ c }}</span>{% endfor %}</span>
+      </li>
       {% endfor %}
-
-      <li><a href="/page{{ paginator.total_pages }}/">Last</a></li>
-
-      {% if paginator.next_page %}
-        <li>
-          <a href="{{ paginator.next_page_path | prepend: site.baseurl | replace: '//', '/' }}">&raquo;</a>
-        </li>
-      {% else %}
-        <li class="disabled"><span>&raquo;</span></li>
-      {% endif %}
     </ul>
-    {% endif %}
-</div><!-- end #home -->
+  </div>
+  {% endfor %}
+</section>
